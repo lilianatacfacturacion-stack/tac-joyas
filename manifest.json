@@ -1,0 +1,14 @@
+{
+  "name": "TAC JOYAS",
+  "short_name": "TAC JOYAS",
+  "description": "Diseño de joyas artesanales para corte y grabado láser",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#c9a96e",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

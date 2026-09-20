@@ -1,0 +1,108 @@
+:root {
+  --bg: #1a1a2e;
+  --bg2: #16213e;
+  --bg3: #0f3460;
+  --gold: #c9a96e;
+  --gold-light: #e8c99a;
+  --gold-dark: #a07840;
+  --text: #f0e6d3;
+  --text-muted: #9a8a7a;
+  --danger: #e05c5c;
+  --success: #5ce08a;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --transition: 0.2s ease;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: fadeIn 0.18s ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.screen-header {
+  padding: calc(var(--safe-top) + 12px) 16px 12px;
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(201,169,110,0.15);
+  flex-shrink: 0;
+}
+
+.screen-header h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold);
+  flex: 1;
+  letter-spacing: 0.05em;
+}
+
+.screen-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+}
+
+.screen-footer {
+  padding: 12px 16px calc(var(--safe-bottom) + 12px);
+  background: var(--bg2);
+  border-top: 1px solid rgba(201,169,110,0.15);
+  flex-shrink: 0;
+}
+
+/* Step bar */
+.step-bar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px;
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+
+.step-dot {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.12);
+  transition: background var(--transition);
+}
+.step-dot.active { background: var(--gold); }
+.step-dot.done { background: var(--gold-dark); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 2px; }
