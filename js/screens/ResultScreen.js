@@ -118,10 +118,24 @@ export class ResultScreen {
   }
 
   async _loadAndRender(el, project) {
-    // Cargar canvas de material
+    // Cargar imagen fuente para silueta real
+    let sourceCanvas = null;
+    if (project.imageId) {
+      const imgData = await loadBlob(project.imageId);
+      if (imgData) {
+        const sImg = new Image();
+        await new Promise(r => { sImg.onload = r; sImg.src = imgData; });
+        sourceCanvas = document.createElement('canvas');
+        sourceCanvas.width = sImg.naturalWidth;
+        sourceCanvas.height = sImg.naturalHeight;
+        sourceCanvas.getContext('2d').drawImage(sImg, 0, 0);
+      }
+    }
+
+    // Cargar canvas de material (usa silueta real si existe)
     let materialCanvas = null;
-    if (project.engravingGeometryId || project.cutGeometryId || project.imageId) {
-      const silhouette = materialEngine.buildBasicSilhouette(300, 400, project.material);
+    if (project.imageId || project.engravingGeometryId) {
+      const silhouette = materialEngine.buildBasicSilhouette(300, 400, project.material, sourceCanvas);
       materialCanvas = materialEngine.applyMaterial(silhouette, project.material || {});
     }
 
@@ -139,12 +153,12 @@ export class ResultScreen {
       }
     }
 
-    // Laser canvases
+    // Laser canvases — pasa sourceCanvas para silueta real
     const cutCanvas = laserEngine.buildCutCanvas(
-      project.widthMm || 30, project.heightMm || 40, null, project.holes || []
+      project.widthMm || 30, project.heightMm || 40, sourceCanvas, project.holes || []
     );
     const laserEngCanvas = laserEngine.buildEngravingCanvas(
-      project.widthMm || 30, project.heightMm || 40, engravingCanvas, project.engravingLevel || 'MEDIO'
+      project.widthMm || 30, project.heightMm || 40, engravingCanvas, project.engravingLevel || 'MEDIO', sourceCanvas
     );
 
     this._canvases = { materialCanvas, engravingCanvas, cutCanvas, laserEngCanvas };
