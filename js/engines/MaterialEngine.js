@@ -40,9 +40,16 @@ export class MaterialEngine {
   }
 
   /**
-   * Genera el canvas de silueta sólida (forma básica = rectángulo redondeado si no hay imagen).
+   * Genera el canvas de silueta sólida.
+   * Si se pasa sourceCanvas (la foto), extrae la forma real del objeto.
+   * Si no, usa un rectángulo redondeado como fallback.
+   *
+   * @param {number} widthPx
+   * @param {number} heightPx
+   * @param {object} material
+   * @param {HTMLCanvasElement|null} sourceCanvas - canvas con la foto original
    */
-  buildBasicSilhouette(widthPx, heightPx, material) {
+  buildBasicSilhouette(widthPx, heightPx, material, sourceCanvas = null) {
     const c = document.createElement('canvas');
     c.width = widthPx; c.height = heightPx;
     const ctx = c.getContext('2d');
@@ -51,14 +58,88 @@ export class MaterialEngine {
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, widthPx, heightPx);
 
-    // Forma: elipse para pendiente floral
-    const r = Math.min(widthPx, heightPx) * 0.42;
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.ellipse(widthPx/2, heightPx/2 + heightPx*0.02, widthPx*0.45, heightPx*0.47, 0, 0, Math.PI*2);
-    ctx.fill();
+    if (sourceCanvas) {
+      // ── Extraer silueta real de la foto ──────────────────────────────────
+      const sw = sourceCanvas.width, sh = sourceCanvas.height;
+      const sCtx = sourceCanvas.getContext('2d');
+      const d = sCtx.getImageData(0, 0, sw, sh);
+      const px = d.data;
+
+      // Samplear color de fondo desde las esquinas
+      const sampleCorner = (x, y) => {
+        const xi = Math.min(Math.max(x, 0), sw-1);
+        const yi = Math.min(Math.max(y, 0), sh-1);
+        const i = (yi*sw+xi)*4;
+        return [px[i], px[i+1], px[i+2]];
+      };
+      const corners = [
+        sampleCorner(0,0), sampleCorner(sw-1,0),
+        sampleCorner(0,sh-1), sampleCorner(sw-1,sh-1),
+      ];
+      let bgR=0, bgG=0, bgB=0;
+      corners.forEach(([r,g,b]) => { bgR+=r; bgG+=g; bgB+=b; });
+      bgR/=4; bgG/=4; bgB/=4;
+
+      // Generar máscara: objeto = negro (0), fondo = blanco (255)
+      const mask = new Uint8ClampedArray(sw * sh * 4);
+      for (let i = 0; i < px.length; i += 4) {
+        const diff = (Math.abs(px[i]-bgR) + Math.abs(px[i+1]-bgG) + Math.abs(px[i+2]-bgB)) / 3;
+        const v = diff > 28 ? 0 : 255;
+        mask[i] = mask[i+1] = mask[i+2] = v;
+        mask[i+3] = 255;
+      }
+
+      // Flood-fill desde esquinas para aislar el objeto correctamente
+      const visited = new Uint8Array(sw * sh);
+      const floodQueue = [0, sw-1, (sh-1)*sw, (sh-1)*sw + sw-1];
+      for (const start of floodQueue) {
+        const stack = [start];
+        while (stack.length) {
+          const p = stack.pop();
+          if (p < 0 || p >= sw*sh || visited[p]) continue;
+          if (mask[p*4] !== 255) continue; // solo fondo blanco
+          visited[p] = 1;
+          stack.push(p-1, p+1, p-sw, p+sw);
+        }
+      }
+      // Islas de fondo dentro del objeto → convertir a objeto
+      for (let i = 0; i < sw*sh; i++) {
+        if (mask[i*4] === 255 && !visited[i]) {
+          mask[i*4] = mask[i*4+1] = mask[i*4+2] = 0;
+        }
+      }
+
+      const mCanvas = document.createElement('canvas');
+      mCanvas.width = sw; mCanvas.height = sh;
+      mCanvas.getContext('2d').putImageData(new ImageData(mask, sw, sh), 0, 0);
+
+      // Dibujar silueta escalada al canvas destino
+      ctx.drawImage(mCanvas, 0, 0, widthPx, heightPx);
+
+    } else {
+      // ── Fallback: rectángulo redondeado ──────────────────────────────────
+      const pad = Math.min(widthPx, heightPx) * 0.06;
+      const r = Math.min(widthPx, heightPx) * 0.1;
+      ctx.fillStyle = '#000';
+      this._roundRectFill(ctx, pad, pad, widthPx - pad*2, heightPx - pad*2, r);
+    }
 
     return c;
+  }
+
+  _roundRectFill(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    ctx.fill();
   }
 
   // ── Privado ──────────────────────────────────────────────────────────────────
