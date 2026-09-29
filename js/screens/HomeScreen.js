@@ -1,4 +1,4 @@
-import { loadProjects, getLastProjectId, exportProjectBundle, importProjectBundle } from '../storage/Storage.js';
+import { loadProjects, getLastProjectId, exportProjectBundle, importProjectBundle, deleteProject, deleteBlob } from '../storage/Storage.js';
 
 export class HomeScreen {
   constructor(app) { this.app = app; }
@@ -54,7 +54,10 @@ export class HomeScreen {
 
       ${projects.length > 0 ? `
       <div class="recent-projects">
-        <h2>Diseños recientes</h2>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding: 0 24px; margin-bottom:8px;">
+          <h2 style="margin:0;">Diseños recientes</h2>
+          <button class="btn btn-ghost" id="btn-delete-all" style="font-size:0.75rem; padding:4px 10px; color:#e06c6c; border-color:rgba(224,108,108,0.3);">🗑 Borrar todo</button>
+        </div>
         ${projects.slice(0, 5).map(p => `
           <div class="project-card" data-id="${p.id}">
             <div class="project-thumb">💍</div>
@@ -64,6 +67,7 @@ export class HomeScreen {
             </div>
             <div class="project-status">${this._statusLabel(p.status)}</div>
             <button class="btn btn-ghost" style="font-size:0.75rem;padding:4px 8px;" data-export-id="${p.id}">Exportar</button>
+            <button class="btn btn-ghost" style="font-size:0.75rem;padding:4px 8px;color:#e06c6c;border-color:rgba(224,108,108,0.3);" data-delete-id="${p.id}">🗑</button>
           </div>
         `).join('')}
       </div>
@@ -94,7 +98,7 @@ export class HomeScreen {
 
     el.querySelectorAll('.project-card').forEach(card => {
       card.addEventListener('click', e => {
-        if (e.target.closest('[data-export-id]')) return;
+        if (e.target.closest('[data-export-id]') || e.target.closest('[data-delete-id]')) return;
         this.app.openProject(card.dataset.id);
       });
     });
@@ -116,6 +120,42 @@ export class HomeScreen {
         this.app.showToast('Diseño exportado');
       };
     });
+
+    // Borrar diseño individual
+    el.querySelectorAll('[data-delete-id]').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.deleteId;
+        const project = loadProjects().find(p => p.id === id);
+        if (!confirm(`¿Borrar "${project?.name || 'este diseño'}"? No se puede deshacer.`)) return;
+        // Borrar blobs asociados
+        for (const field of ['imageId', 'engravingGeometryId', 'cutGeometryId', 'previewId']) {
+          if (project?.[field]) await deleteBlob(project[field]).catch(() => {});
+        }
+        deleteProject(id);
+        this.app.showToast('Diseño eliminado');
+        this.app.navigate('home');
+      };
+    });
+
+    // Borrar todos los diseños
+    const btnDeleteAll = el.querySelector('#btn-delete-all');
+    if (btnDeleteAll) {
+      btnDeleteAll.onclick = async () => {
+        const all = loadProjects();
+        if (all.length === 0) return;
+        if (!confirm(`¿Borrar los ${all.length} diseño(s)? No se puede deshacer.`)) return;
+        for (const p of all) {
+          for (const field of ['imageId', 'engravingGeometryId', 'cutGeometryId', 'previewId']) {
+            if (p[field]) await deleteBlob(p[field]).catch(() => {});
+          }
+          deleteProject(p.id);
+        }
+        localStorage.removeItem('tj_last_project');
+        this.app.showToast('Todos los diseños eliminados');
+        this.app.navigate('home');
+      };
+    }
 
     const importInput = el.querySelector('#input-import-json');
     el.querySelector('#btn-import-project').onclick = () => importInput.click();
