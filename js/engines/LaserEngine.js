@@ -4,8 +4,6 @@ export class LaserEngine {
   }
 
   // ─── NUEVO: silueta rellena sin Sobel ─────────────────────────────────────
-  // Retorna canvas BN donde negro=objeto, blanco=fondo
-  // Úsala como máscara de clip en PreviewEngine (en lugar del cutCanvas lleno de líneas internas)
   buildFilledSilhouette(widthMm, heightMm, sourceCanvas) {
     if (!sourceCanvas) return null;
     const W = Math.round((widthMm || 30) * this.pxPerMm);
@@ -24,9 +22,7 @@ export class LaserEngine {
     ctx.fillRect(0, 0, W, H);
 
     if (sourceCanvas) {
-      // Extraer silueta rellena y aplicar Sobel SÓLO al borde exterior
       const filled = this._extractSilhouette(sourceCanvas, W, H);
-      // Dilatar ligeramente la silueta y restarle la original → borde exterior limpio
       const edgeCanvas = this._outerEdge(filled, W, H);
       ctx.drawImage(edgeCanvas, 0, 0);
     }
@@ -47,7 +43,12 @@ export class LaserEngine {
     return canvas;
   }
 
-  // ─── GRABADO: imagen con intensidad ───────────────────────────────────────
+  // ─── GRABADO: imagen con intensidad variable en escala de grises ───────────
+  // SUAVE = pocos detalles oscuros (umbral alto, solo lo más oscuro de la foto)
+  // MEDIO = detalle moderado
+  // FUERTE = muchos detalles, líneas más oscuras y densas
+  // En lugar de binarizar a B&N puro, se genera una imagen con GRISES reales
+  // para que el modo multiply en PreviewEngine sí muestre diferencia visual.
   buildEngravingCanvas(widthMm, heightMm, engravingCanvas, level = 'MEDIO', sourceCanvas = null) {
     const W = Math.round((widthMm || 30) * this.pxPerMm);
     const H = Math.round((heightMm || 40) * this.pxPerMm);
@@ -57,35 +58,49 @@ export class LaserEngine {
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, W, H);
 
-    if (engravingCanvas) {
-      ctx.drawImage(engravingCanvas, 0, 0, W, H);
-    } else if (sourceCanvas) {
-      // Si no hay canvas de grabado explícito, usar la imagen fuente con umbral
-      ctx.drawImage(sourceCanvas, 0, 0, W, H);
-    } else {
-      return canvas;
-    }
+    const src = engravingCanvas || sourceCanvas;
+    if (!src) return canvas;
 
-    // Binarizar con umbral que varía según intensidad
-    const thresholds = { SUAVE: 200, MEDIO: 155, FUERTE: 100 };
-    const thr = thresholds[level] ?? 155;
+    ctx.drawImage(src, 0, 0, W, H);
 
     const imgData = ctx.getImageData(0, 0, W, H);
     const d = imgData.data;
+
+    // Parámetros por nivel:
+    // - threshold: píxeles más oscuros que este valor participan en el grabado
+    // - contrast: cuánto se oscurecen las zonas grabadas
+    // SUAVE: solo lo más oscuro, poco contraste → grabado ligero
+    // MEDIO: moderado
+    // FUERTE: umbral amplio + alto contraste → grabado intenso
+    const params = {
+      SUAVE:  { threshold: 160, minOutput: 200 }, // zonas grabadas salen gris claro
+      MEDIO:  { threshold: 200, minOutput: 100 }, // zonas grabadas salen gris medio
+      FUERTE: { threshold: 230, minOutput: 0   }, // zonas grabadas salen negro
+    };
+    const { threshold, minOutput } = params[level] ?? params.MEDIO;
+
     for (let i = 0; i < d.length; i += 4) {
       const luma = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
-      const v = luma < thr ? 0 : 255;
+      let v;
+      if (luma < threshold) {
+        // Zona oscura de la imagen → zona grabada
+        // Escalar: luma=0 → minOutput, luma=threshold → 255
+        v = minOutput + (255 - minOutput) * (luma / threshold);
+        v = Math.round(v);
+      } else {
+        // Zona clara → sin grabar → blanco
+        v = 255;
+      }
       d[i] = d[i+1] = d[i+2] = v;
       d[i+3] = 255;
     }
     ctx.putImageData(imgData, 0, 0);
 
-    // Mascarar con silueta para que el grabado no salga del objeto
+    // Mascarar con silueta
     if (sourceCanvas) {
       const sil = this._extractSilhouette(sourceCanvas, W, H);
-      ctx.globalCompositeOperation = 'destination-in';
-      // Convertir silueta BN a máscara alfa: negro=opaco, blanco=transparente
       const mask = this._bnToAlpha(sil, W, H);
+      ctx.globalCompositeOperation = 'destination-in';
       ctx.drawImage(mask, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
     }
@@ -103,7 +118,6 @@ export class LaserEngine {
 
   // ═══════════════════ MÉTODOS PRIVADOS ════════════════════════════════════
 
-  // Muestro de esquinas → máscara BN (negro=objeto, blanco=fondo)
   _extractSilhouette(src, W, H) {
     const tmp = document.createElement('canvas');
     tmp.width = W; tmp.height = H;
@@ -112,7 +126,6 @@ export class LaserEngine {
     const imgData = tCtx.getImageData(0, 0, W, H);
     const d = imgData.data;
 
-    // Color de fondo desde las 4 esquinas
     const corners = [0, (W-1)*4, (H-1)*W*4, ((H-1)*W + W-1)*4];
     let bgR = 0, bgG = 0, bgB = 0;
     corners.forEach(i => { bgR += d[i]; bgG += d[i+1]; bgB += d[i+2]; });
@@ -126,20 +139,17 @@ export class LaserEngine {
 
     for (let i = 0; i < d.length; i += 4) {
       const diff = Math.abs(d[i]-bgR) + Math.abs(d[i+1]-bgG) + Math.abs(d[i+2]-bgB);
-      const v = diff > 30 ? 0 : 255; // negro=objeto, blanco=fondo
+      const v = diff > 30 ? 0 : 255;
       o[i] = o[i+1] = o[i+2] = v;
       o[i+3] = 255;
     }
 
     oCtx.putImageData(oData, 0, 0);
-
-    // Flood-fill desde esquinas para rellenar huecos internos del fondo
     this._floodFillWhite(oData.data, W, H);
     oCtx.putImageData(oData, 0, 0);
     return out;
   }
 
-  // Flood-fill BFS desde las 4 esquinas para marcar fondo exterior como blanco
   _floodFillWhite(data, W, H) {
     const visited = new Uint8Array(W * H);
     const queue = [];
@@ -148,7 +158,7 @@ export class LaserEngine {
       if (x < 0 || x >= W || y < 0 || y >= H) return;
       if (visited[i]) return;
       const pi = i * 4;
-      if (data[pi] < 128) return; // ya negro (objeto)
+      if (data[pi] < 128) return;
       visited[i] = 1;
       data[pi] = data[pi+1] = data[pi+2] = 255;
       queue.push(i);
@@ -164,7 +174,6 @@ export class LaserEngine {
     }
   }
 
-  // Borde exterior: dilata la silueta y resta la original → solo contorno
   _outerEdge(silCanvas, W, H) {
     const ctx = silCanvas.getContext('2d');
     const data = ctx.getImageData(0, 0, W, H).data;
@@ -174,15 +183,12 @@ export class LaserEngine {
     const oCtx = out.getContext('2d');
     const oData = oCtx.createImageData(W, H);
     const o = oData.data;
-    // Rellenar blanco
     for (let i = 0; i < o.length; i += 4) { o[i]=o[i+1]=o[i+2]=255; o[i+3]=255; }
 
-    // Para cada pixel objeto, si algún vecino es fondo → es borde → negro
     for (let y = 1; y < H-1; y++) {
       for (let x = 1; x < W-1; x++) {
         const ci = (y * W + x) * 4;
-        if (data[ci] > 128) continue; // es fondo
-        // Es objeto: ¿algún vecino es fondo?
+        if (data[ci] > 128) continue;
         const n = [(y-1)*W+x, (y+1)*W+x, y*W+(x-1), y*W+(x+1)];
         const isBorder = n.some(ni => data[ni*4] > 128);
         if (isBorder) {
@@ -194,7 +200,6 @@ export class LaserEngine {
     return out;
   }
 
-  // Convierte canvas BN (negro=objeto) a canvas RGBA (negro=opaco, blanco=transparente)
   _bnToAlpha(bnCanvas, W, H) {
     const ctx = bnCanvas.getContext('2d');
     const d = ctx.getImageData(0, 0, W, H).data;
@@ -205,14 +210,12 @@ export class LaserEngine {
     const o = oData.data;
     for (let i = 0; i < d.length; i += 4) {
       o[i] = o[i+1] = o[i+2] = 0;
-      // negro=objeto=opaco, blanco=fondo=transparente
       o[i+3] = d[i] < 128 ? 255 : 0;
     }
     oCtx.putImageData(oData, 0, 0);
     return out;
   }
 
-  // Sobel clásico (para uso interno si se necesita)
   _sobelEdge(imgData, W, H) {
     const d = imgData.data;
     const out = document.createElement('canvas');
@@ -224,11 +227,6 @@ export class LaserEngine {
 
     for (let y = 1; y < H-1; y++) {
       for (let x = 1; x < W-1; x++) {
-        const g = (px) => {
-          const idx = (py * W + px) * 4;
-          let py = y;
-          return 0.299*d[idx]+0.587*d[idx+1]+0.114*d[idx+2];
-        };
         const luma = (px, py) => {
           const idx = (py * W + px) * 4;
           return 0.299*d[idx]+0.587*d[idx+1]+0.114*d[idx+2];
