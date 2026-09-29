@@ -10,10 +10,12 @@ const materialEngine = new MaterialEngine();
 export class ResultScreen {
   constructor(app) {
     this.app = app;
-    this._view = 'PIEZA';      // PIEZA | PENDIENTE | PAREJA
-    this._laserView = null;    // null | CORTE | GRABADO | COMPLETO
+    this._view = 'PIEZA';
+    this._laserView = null;
     this._canvases = {};
     this._mainCanvas = null;
+    this._sourceCanvas = null;   // guardado para regenerar grabado
+    this._rawEngCanvas = null;   // canvas de grabado crudo (sin nivel aplicado)
   }
 
   render() {
@@ -33,12 +35,10 @@ export class ResultScreen {
 
       <div class="screen-body" style="padding:8px 12px;">
 
-        <!-- Canvas principal -->
         <div id="result-canvas-wrap" class="result-canvas-wrap dark-bg" style="min-height:280px; max-height:45vh;">
           <canvas id="result-canvas"></canvas>
         </div>
 
-        <!-- Vistas preview -->
         <div style="margin-top:8px;">
           <div class="view-tabs" id="preview-tabs">
             <button class="view-tab active" data-pview="PIEZA">Pieza sola</button>
@@ -47,7 +47,6 @@ export class ResultScreen {
           </div>
         </div>
 
-        <!-- Información de dimensiones -->
         <div class="dim-display" style="margin-top:10px;">
           <div class="dim-box">
             <div class="val">${project.widthMm || '—'}</div>
@@ -67,7 +66,14 @@ export class ResultScreen {
           </div>
         </div>
 
-        <!-- Vistas láser -->
+        <!-- Intensidad de grabado ajustable aquí también -->
+        <div class="section-title" style="margin-top:14px;">Intensidad del grabado</div>
+        <div class="view-tabs" id="eng-level-tabs">
+          <button class="view-tab ${(project.engravingLevel||'MEDIO')==='SUAVE'?'active':''}" data-elevel="SUAVE">Suave</button>
+          <button class="view-tab ${(project.engravingLevel||'MEDIO')==='MEDIO'?'active':''}" data-elevel="MEDIO">Medio</button>
+          <button class="view-tab ${(project.engravingLevel||'MEDIO')==='FUERTE'?'active':''}" data-elevel="FUERTE">Fuerte</button>
+        </div>
+
         <div class="section-title" style="margin-top:16px;">Preparación para láser</div>
         <div class="view-tabs" id="laser-tabs">
           <button class="view-tab active" data-lview="">Vista normal</button>
@@ -76,7 +82,6 @@ export class ResultScreen {
           <button class="view-tab" data-lview="COMPLETO">COMPLETO</button>
         </div>
 
-        <!-- Exportar -->
         <div class="section-title" style="margin-top:16px;">Exportar para LaserGRBL</div>
         <div class="export-row">
           <button class="btn btn-secondary" id="btn-export-cut">⬇ Exportar CORTE</button>
@@ -88,7 +93,7 @@ export class ResultScreen {
 
         <div class="section-title" style="margin-top:16px;">Material seleccionado</div>
         <div class="card" style="display:flex; align-items:center; gap:12px;">
-          <div id="mat-swatch" style="width:40px; height:40px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:${project.material?.color || '#c2845a'};"></div>
+          <div style="width:40px; height:40px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:${project.material?.color || '#c2845a'};"></div>
           <div>
             <div style="font-weight:700;">${project.material?.type || 'LISO'}</div>
             <div style="font-size:0.8rem; color:var(--text-muted);">${project.material?.color || ''}</div>
@@ -118,7 +123,7 @@ export class ResultScreen {
   }
 
   async _loadAndRender(el, project) {
-    // Cargar imagen fuente para silueta real
+    // 1. Cargar imagen fuente
     let sourceCanvas = null;
     if (project.imageId) {
       const imgData = await loadBlob(project.imageId);
@@ -131,40 +136,63 @@ export class ResultScreen {
         sourceCanvas.getContext('2d').drawImage(sImg, 0, 0);
       }
     }
+    this._sourceCanvas = sourceCanvas;
 
-    // Cargar canvas de material (usa silueta real si existe)
-    let materialCanvas = null;
-    let silhouetteCanvas = null; // silueta BN pura (negro=objeto) para clip en PreviewEngine
-    if (project.imageId || project.engravingGeometryId) {
-      silhouetteCanvas = materialEngine.buildBasicSilhouette(300, 400, project.material, sourceCanvas);
-      materialCanvas = materialEngine.applyMaterial(silhouetteCanvas, project.material || {});
-    }
+    // 2. Silueta rellena (negro=objeto) para clip en preview
+    const silhouetteCanvas = materialEngine.buildBasicSilhouette(300, 400, project.material, sourceCanvas);
 
-    // Cargar canvas de grabado
-    let engravingCanvas = null;
+    // 3. Material con color y textura, clipeado a la silueta
+    const materialCanvas = materialEngine.applyMaterial(silhouetteCanvas, project.material || {});
+
+    // 4. Canvas de grabado crudo (imagen B/N de líneas)
+    let rawEngCanvas = null;
     if (project.engravingGeometryId) {
       const data = await loadBlob(project.engravingGeometryId);
       if (data) {
         const img = new Image();
         await new Promise(r => { img.onload = r; img.src = data; });
-        engravingCanvas = document.createElement('canvas');
-        engravingCanvas.width = 300; engravingCanvas.height = 400;
-        const ctx = engravingCanvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, 300, 400);
+        rawEngCanvas = document.createElement('canvas');
+        rawEngCanvas.width = 300; rawEngCanvas.height = 400;
+        rawEngCanvas.getContext('2d').drawImage(img, 0, 0, 300, 400);
       }
     }
+    this._rawEngCanvas = rawEngCanvas;
 
-    // Laser canvases — pasa sourceCanvas para silueta real
+    // 5. Canvas láser de corte (contorno Sobel)
     const cutCanvas = laserEngine.buildCutCanvas(
       project.widthMm || 30, project.heightMm || 40, sourceCanvas, project.holes || []
     );
+
+    // 6. Canvas láser de grabado (con nivel aplicado)
     const laserEngCanvas = laserEngine.buildEngravingCanvas(
-      project.widthMm || 30, project.heightMm || 40, engravingCanvas, project.engravingLevel || 'MEDIO', sourceCanvas
+      project.widthMm || 30, project.heightMm || 40,
+      rawEngCanvas, project.engravingLevel || 'MEDIO', sourceCanvas
     );
 
-    this._canvases = { materialCanvas, engravingCanvas, cutCanvas, laserEngCanvas, silhouetteCanvas };
+    // 7. Silueta RELLENA a tamaño láser (para clip en vistas láser)
+    const laserSilCanvas = laserEngine.buildFilledSilhouette(
+      project.widthMm || 30, project.heightMm || 40, sourceCanvas
+    );
+
+    this._canvases = {
+      materialCanvas,
+      silhouetteCanvas,
+      cutCanvas,
+      laserEngCanvas,
+      laserSilCanvas,
+      rawEngCanvas,
+    };
 
     this._initMainCanvas(el, project);
+  }
+
+  /** Regenera el canvas de grabado láser con el nuevo nivel */
+  _rebuildEngraving(project) {
+    const laserEngCanvas = laserEngine.buildEngravingCanvas(
+      project.widthMm || 30, project.heightMm || 40,
+      this._rawEngCanvas, project.engravingLevel || 'MEDIO', this._sourceCanvas
+    );
+    this._canvases.laserEngCanvas = laserEngCanvas;
   }
 
   _initMainCanvas(el, project) {
@@ -172,50 +200,58 @@ export class ResultScreen {
     if (!wrap) return;
     const W = wrap.offsetWidth || 360;
     const H = Math.round(W * 0.85);
-
     const canvas = el.querySelector('#result-canvas');
-    canvas.width = W;
-    canvas.height = H;
-    canvas.style.width = W + 'px';
-    canvas.style.height = H + 'px';
+    canvas.width = W; canvas.height = H;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     this._mainCanvas = canvas;
-
     this._render(el, project);
   }
 
   _render(el, project) {
     if (!this._mainCanvas) return;
     previewEngine.render(
-      this._mainCanvas,
-      project,
-      this._view,
-      this._laserView,
+      this._mainCanvas, project, this._view, this._laserView,
       {
-        materialCanvas: this._canvases.materialCanvas,
-        engravingCanvas: this._canvases.engravingCanvas || this._canvases.laserEngCanvas,
-        cutCanvas: this._canvases.cutCanvas,
-        silhouetteCanvas: this._canvases.silhouetteCanvas,
+        materialCanvas:    this._canvases.materialCanvas,
+        silhouetteCanvas:  this._canvases.silhouetteCanvas,
+        engravingCanvas:   this._canvases.rawEngCanvas,
+        cutCanvas:         this._canvases.cutCanvas,
+        laserEngCanvas:    this._canvases.laserEngCanvas,
+        laserSilCanvas:    this._canvases.laserSilCanvas,
+        engravingLevel:    project.engravingLevel || 'MEDIO',
       }
     );
 
-    // Fondo del wrap
     const wrap = el.querySelector('#result-canvas-wrap');
-    if (this._laserView === 'CORTE' || this._laserView === 'GRABADO') {
-      wrap.style.background = '#fff';
-    } else {
-      wrap.style.background = '#050510';
+    if (wrap) {
+      if (this._laserView === 'CORTE' || this._laserView === 'GRABADO') {
+        wrap.style.background = '#fff';
+      } else {
+        wrap.style.background = '#050510';
+      }
     }
   }
 
   _setupEvents(el, project) {
-    el.querySelector('#btn-back').onclick = () => this.app.navigate('hardware');
+    el.querySelector('#btn-back').onclick  = () => this.app.navigate('hardware');
     el.querySelector('#btn-back2').onclick = () => this.app.navigate('hardware');
-    el.querySelector('#btn-home').onclick = () => this.app.navigate('home');
+    el.querySelector('#btn-home').onclick  = () => this.app.navigate('home');
     el.querySelector('#btn-save-res').onclick = () => {
       this._savePreview(project);
       this.app.saveProject();
       this.app.showToast('Proyecto guardado');
     };
+
+    // Intensidad de grabado — regenera y redibuja
+    el.querySelectorAll('[data-elevel]').forEach(tab => {
+      tab.onclick = () => {
+        project.engravingLevel = tab.dataset.elevel;
+        el.querySelectorAll('[data-elevel]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        this._rebuildEngraving(project);
+        this._render(el, project);
+      };
+    });
 
     // Vistas preview
     el.querySelectorAll('[data-pview]').forEach(tab => {
@@ -240,7 +276,6 @@ export class ResultScreen {
       };
     });
 
-    // Exportaciones
     el.querySelector('#btn-export-cut').onclick = () => {
       const c = this._canvases.cutCanvas;
       if (c) laserEngine.exportPNG(c, `${project.name || 'joya'}_CORTE.png`);
@@ -264,4 +299,3 @@ export class ResultScreen {
     project.status = 'ready';
   }
 }
-
