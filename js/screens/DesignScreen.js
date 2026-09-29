@@ -37,7 +37,10 @@ export class DesignScreen {
         </div>
         <div class="controls">
           <label>Umbral grabado
-            <input type="range" id="sliderThreshold" min="10" max="120" value="55">
+            <input type="range" id="sliderThreshold" min="5" max="40" value="18">
+          </label>
+          <label>Radio local <span id="lblRadius">8</span>px
+            <input type="range" id="sliderRadius" min="3" max="20" value="8">
           </label>
           <label>Suavizado
             <input type="range" id="sliderSmooth" min="0" max="5" value="1">
@@ -67,9 +70,22 @@ export class DesignScreen {
     this._container.querySelector('#sliderThreshold')
       .addEventListener('input', async e => {
         const thr = parseInt(e.target.value);
+        const r2 = parseInt(this._container.querySelector('#sliderRadius').value);
         this._engravingCanvas = await designEngine.extractEngravingLines(
           this._sourceImg,
-          { threshold: thr, silhouetteMask: this._silhouetteCanvas }
+          { threshold: thr, blurRadius: r2, silhouetteMask: this._silhouetteCanvas }
+        );
+        this._drawWorkCanvas();
+      });
+
+    this._container.querySelector('#sliderRadius')
+      .addEventListener('input', async e => {
+        const r = parseInt(e.target.value);
+        this._container.querySelector('#lblRadius').textContent = r;
+        const thr = parseInt(this._container.querySelector('#sliderThreshold').value);
+        this._engravingCanvas = await designEngine.extractEngravingLines(
+          this._sourceImg,
+          { threshold: thr, blurRadius: r, silhouetteMask: this._silhouetteCanvas }
         );
         this._drawWorkCanvas();
       });
