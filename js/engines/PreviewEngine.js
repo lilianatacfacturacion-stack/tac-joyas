@@ -1,315 +1,239 @@
-/**
- * PreviewEngine v3
- * Renderiza el preview 2D/2.5D en el canvas de resultado.
- * Vistas: PIEZA SOLA | PENDIENTE COMPLETO | PAREJA
- *
- * FIX v3:
- *  - Usa cutCanvas para derivar la silueta real (flood-fill desde esquinas)
- *    en lugar de la elipse hardcodeada o silhouetteCanvas (que falla con fondos claros)
- *  - GRABADO incluye el borde de corte como línea superpuesta
- *  - COMPLETO muestra grabado sobre la pieza con forma correcta
- */
 export class PreviewEngine {
-  render(targetCanvas, project, view = 'PIEZA', laserView = null, canvases = {}) {
-    const ctx = targetCanvas.getContext('2d');
-    const W = targetCanvas.width;
-    const H = targetCanvas.height;
-    ctx.clearRect(0, 0, W, H);
+  /**
+   * canvases: {
+   *   materialCanvas,    // color + textura, ya clipeado a silueta
+   *   silhouetteCanvas,  // BN rellena (negro=objeto) — de MaterialEngine
+   *   cutCanvas,         // líneas de corte/borde exterior
+   *   laserEngCanvas,    // grabado binarizado con nivel aplicado
+   *   laserSilCanvas,    // BN rellena a escala láser (de LaserEngine.buildFilledSilhouette)
+   *   engravingCanvas,   // grabado crudo (para composición en vista normal)
+   *   engravingLevel,    // 'SUAVE'|'MEDIO'|'FUERTE'
+   * }
+   */
+  render(canvas, project, view = 'PIEZA', laserView = null, canvases = {}) {
+    this._c = canvas;
+    this._ctx = canvas.getContext('2d');
+    this._project = project;
+    this._canvases = canvases;
+    this._W = canvas.width;
+    this._H = canvas.height;
 
     if (laserView) {
-      this._renderLaser(ctx, W, H, laserView, canvases, project);
+      this._renderLaser(laserView);
+    } else {
+      this._renderNormal(view);
+    }
+  }
+
+  // ─── Vista normal (Pieza sola / Pendiente / Pareja) ──────────────────────
+  _renderNormal(view) {
+    const ctx = this._ctx;
+    const W = this._W, H = this._H;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#050510';
+    ctx.fillRect(0, 0, W, H);
+
+    if (view === 'PAREJA') {
+      this._drawPiece(W * 0.28, H * 0.5, W * 0.38, H * 0.78, false);
+      this._drawPiece(W * 0.72, H * 0.5, W * 0.38, H * 0.78, true);
+    } else if (view === 'PENDIENTE') {
+      this._drawPiece(W * 0.5, H * 0.45, W * 0.5, H * 0.85, false);
+      this._drawHardware(W * 0.5, H * 0.09);
+    } else {
+      this._drawPiece(W * 0.5, H * 0.5, W * 0.6, H * 0.85, false);
+    }
+  }
+
+  // Dibuja la pieza realista: color de material + grabado encima en multiply
+  _drawPiece(cx, cy, maxW, maxH, mirror = false) {
+    const ctx = this._ctx;
+    const { materialCanvas, silhouetteCanvas, laserEngCanvas, laserSilCanvas, engravingLevel } = this._canvases;
+
+    // Canvas a usar como fuente de forma: laserSilCanvas si existe, si no silhouetteCanvas
+    const shapeSrc = laserSilCanvas || silhouetteCanvas;
+    if (!shapeSrc && !materialCanvas) {
+      this._drawPlaceholderEllipse(cx, cy, maxW * 0.5, maxH * 0.5, ctx);
       return;
     }
 
-    ctx.fillStyle = '#1a1a2e';
-    ctx.fillRect(0, 0, W, H);
+    // Calcular tamaño de visualización manteniendo proporción
+    const srcW = (shapeSrc || materialCanvas).width;
+    const srcH = (shapeSrc || materialCanvas).height;
+    const scale = Math.min(maxW / srcW, maxH / srcH);
+    const dW = srcW * scale;
+    const dH = srcH * scale;
+    const dx = cx - dW / 2;
+    const dy = cy - dH / 2;
 
-    const count = view === 'PAREJA' ? 2 : 1;
-    const pieceW = view === 'PAREJA' ? W * 0.38 : W * 0.7;
-    const pieceH = pieceW * (project.heightMm || 40) / (project.widthMm || 30);
-    const startX = view === 'PAREJA' ? W * 0.1 : (W - pieceW) / 2;
-    const offsetX = view === 'PAREJA' ? W * 0.52 : 0;
-    const pieceY = view === 'PENDIENTE' ? H * 0.15 : (H - pieceH) / 2;
-
-    for (let i = 0; i < count; i++) {
-      const x = startX + (i === 0 ? 0 : offsetX);
-      this._drawPiece(ctx, x, pieceY, pieceW, pieceH, project, canvases);
-      if (view === 'PENDIENTE' || view === 'PAREJA') {
-        this._drawHardware(ctx, x, pieceY, pieceW, pieceH, project);
-      }
+    ctx.save();
+    if (mirror) {
+      ctx.translate(cx * 2, 0);
+      ctx.scale(-1, 1);
     }
 
-    if (project.widthMm && project.heightMm) {
-      ctx.save();
-      ctx.font = '600 11px system-ui';
-      ctx.fillStyle = 'rgba(201,169,110,0.7)';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${project.widthMm} × ${project.heightMm} mm`, W/2, H - 10);
-      ctx.restore();
+    if (materialCanvas && shapeSrc) {
+      // 1. Crear canvas temporal con material clipeado a silueta limpia
+      const tmp = document.createElement('canvas');
+      tmp.width = dW; tmp.height = dH;
+      const tCtx = tmp.getContext('2d');
+
+      // Dibujar material
+      tCtx.drawImage(materialCanvas, 0, 0, dW, dH);
+
+      // Clipear con la silueta limpia (negro=objeto → invertir a alfa)
+      const maskCanvas = this._bnToAlpha(shapeSrc, dW, dH);
+      tCtx.globalCompositeOperation = 'destination-in';
+      tCtx.drawImage(maskCanvas, 0, 0);
+      tCtx.globalCompositeOperation = 'source-over';
+
+      // 2. Superponer grabado en modo multiply para simular grabado láser en cuero
+      if (laserEngCanvas) {
+        // El grabado láser (negro=grabado, blanco=sin grabar) se aplica como sombra
+        tCtx.globalCompositeOperation = 'multiply';
+        // Ajustar opacidad del grabado según nivel
+        const alphas = { SUAVE: 0.35, MEDIO: 0.6, FUERTE: 0.85 };
+        tCtx.globalAlpha = alphas[engravingLevel] ?? 0.6;
+        tCtx.drawImage(laserEngCanvas, 0, 0, dW, dH);
+        tCtx.globalAlpha = 1;
+        tCtx.globalCompositeOperation = 'source-over';
+      }
+
+      ctx.drawImage(tmp, dx, dy);
+    } else if (materialCanvas) {
+      ctx.drawImage(materialCanvas, dx, dy, dW, dH);
+    }
+
+    ctx.restore();
+  }
+
+  _drawHardware(cx, cy) {
+    const ctx = this._ctx;
+    const hw = this._project?.hardware?.[0];
+    const color = hw?.color || '#b8860b';
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    // Gancho
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 12);
+    ctx.quadraticCurveTo(cx + 15, cy - 20, cx + 15, cy - 35);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ─── Vistas láser ─────────────────────────────────────────────────────────
+  _renderLaser(laserView) {
+    const ctx = this._ctx;
+    const W = this._W, H = this._H;
+    const pad = 32;
+
+    if (laserView === 'CORTE') {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, W, H);
+      this._drawLaserCanvas(this._canvases.cutCanvas, pad, ctx, W, H);
+
+    } else if (laserView === 'GRABADO') {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, W, H);
+      this._drawLaserCanvas(this._canvases.laserEngCanvas, pad, ctx, W, H);
+      // Superponer el borde de corte en azul semitransparente
+      if (this._canvases.cutCanvas) {
+        const { dX, dY, dW, dH } = this._laserLayout(this._canvases.cutCanvas, pad, W, H);
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.globalCompositeOperation = 'multiply';
+        // Colorear el borde en azul
+        const blue = document.createElement('canvas');
+        blue.width = dW; blue.height = dH;
+        const bCtx = blue.getContext('2d');
+        bCtx.drawImage(this._canvases.cutCanvas, 0, 0, dW, dH);
+        // Recolorear líneas negras a azul
+        const bData = bCtx.getImageData(0, 0, dW, dH);
+        const bd = bData.data;
+        for (let i = 0; i < bd.length; i += 4) {
+          if (bd[i] < 128) {
+            bd[i] = 0; bd[i+1] = 80; bd[i+2] = 200;
+          }
+        }
+        bCtx.putImageData(bData, 0, 0);
+        ctx.drawImage(blue, dX, dY);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.restore();
+      }
+
+    } else if (laserView === 'COMPLETO') {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, W, H);
+      this._drawLaserCanvas(this._canvases.laserEngCanvas, pad, ctx, W, H);
+      // Encima el corte con mayor opacidad
+      if (this._canvases.cutCanvas) {
+        const { dX, dY, dW, dH } = this._laserLayout(this._canvases.cutCanvas, pad, W, H);
+        ctx.save();
+        ctx.globalAlpha = 0.8;
+        ctx.drawImage(this._canvases.cutCanvas, dX, dY, dW, dH);
+        ctx.restore();
+      }
     }
   }
 
-  /**
-   * Deriva una máscara rellena (negro=objeto transparente, blanco=fondo alpha=0)
-   * desde el cutCanvas (que tiene el contorno negro sobre fondo blanco).
-   * Hace flood-fill desde las esquinas para rellenar el interior.
-   */
-  _silhouetteMaskFromCut(cutCanvas, W, H) {
-    // Dibujar cutCanvas en canvas temporal a tamaño destino
+  _laserLayout(src, pad, W, H) {
+    const sW = src.width, sH = src.height;
+    const scale = Math.min((W - pad*2) / sW, (H - pad*2) / sH);
+    const dW = Math.round(sW * scale);
+    const dH = Math.round(sH * scale);
+    const dX = Math.round((W - dW) / 2);
+    const dY = Math.round((H - dH) / 2);
+    return { dX, dY, dW, dH, scale };
+  }
+
+  _drawLaserCanvas(src, pad, ctx, W, H) {
+    if (!src) {
+      ctx.fillStyle = '#ccc';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Sin datos de láser', W/2, H/2);
+      return;
+    }
+    const { dX, dY, dW, dH } = this._laserLayout(src, pad, W, H);
+    ctx.drawImage(src, dX, dY, dW, dH);
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+
+  // Convierte canvas BN (negro=objeto) en canvas RGBA (negro+opaco donde había objeto)
+  _bnToAlpha(bnCanvas, destW, destH) {
     const tmp = document.createElement('canvas');
-    tmp.width = W; tmp.height = H;
+    tmp.width = destW; tmp.height = destH;
     const tCtx = tmp.getContext('2d');
-    tCtx.fillStyle = '#fff';
-    tCtx.fillRect(0, 0, W, H);
-    if (cutCanvas) tCtx.drawImage(cutCanvas, 0, 0, W, H);
-
-    const imgData = tCtx.getImageData(0, 0, W, H);
+    tCtx.drawImage(bnCanvas, 0, 0, destW, destH);
+    const imgData = tCtx.getImageData(0, 0, destW, destH);
     const d = imgData.data;
-
-    // Umbralizar: negro (borde/objeto) → 0, blanco (fondo) → 1
-    const isWhite = new Uint8Array(W * H);
-    for (let i = 0; i < W * H; i++) {
-      const luma = d[i*4]*0.299 + d[i*4+1]*0.587 + d[i*4+2]*0.114;
-      isWhite[i] = luma > 180 ? 1 : 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const luma = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+      // negro=objeto → opaco; blanco=fondo → transparente
+      d[i+3] = luma < 128 ? 255 : 0;
+      d[i] = d[i+1] = d[i+2] = 0;
     }
-
-    // Flood-fill desde las 4 esquinas: marca como "fondo exterior"
-    const isBg = new Uint8Array(W * H);
-    const stack = [];
-    const corners = [0, W-1, (H-1)*W, (H-1)*W + W-1];
-    corners.forEach(p => { if (isWhite[p] && !isBg[p]) { isBg[p] = 1; stack.push(p); } });
-    while (stack.length) {
-      const p = stack.pop();
-      const x = p % W, y = (p / W) | 0;
-      const neighbors = [];
-      if (x > 0) neighbors.push(p-1);
-      if (x < W-1) neighbors.push(p+1);
-      if (y > 0) neighbors.push(p-W);
-      if (y < H-1) neighbors.push(p+W);
-      for (const n of neighbors) {
-        if (isWhite[n] && !isBg[n]) { isBg[n] = 1; stack.push(n); }
-      }
-    }
-
-    // Construir máscara: objeto (no-bg) → opaco; fondo → transparente
-    const out = tCtx.createImageData(W, H);
-    const o = out.data;
-    for (let i = 0; i < W * H; i++) {
-      if (!isBg[i]) {
-        // objeto: negro opaco
-        o[i*4] = 0; o[i*4+1] = 0; o[i*4+2] = 0; o[i*4+3] = 255;
-      } else {
-        // fondo: transparente
-        o[i*4+3] = 0;
-      }
-    }
-    tCtx.putImageData(out, 0, 0);
+    tCtx.putImageData(imgData, 0, 0);
     return tmp;
   }
 
-  _drawPiece(ctx, x, y, w, h, project, canvases) {
-    const W = Math.round(w), H = Math.round(h);
-    const hasCut = !!(canvases.cutCanvas);
-
-    // Construir offscreen con todo lo de la pieza
-    const off = document.createElement('canvas');
-    off.width = W; off.height = H;
-    const oCtx = off.getContext('2d');
-
-    // 1. Material (fondo de la pieza)
-    if (canvases.materialCanvas) {
-      oCtx.drawImage(canvases.materialCanvas, 0, 0, W, H);
-    } else {
-      oCtx.fillStyle = project.material?.color || '#c2845a';
-      oCtx.fillRect(0, 0, W, H);
-    }
-
-    // 2. Grabado superpuesto en multiply
-    if (canvases.engravingCanvas) {
-      const alpha = project.engravingLevel === 'SUAVE' ? 0.55
-                  : project.engravingLevel === 'FUERTE' ? 0.95 : 0.80;
-      oCtx.save();
-      oCtx.globalAlpha = alpha;
-      oCtx.globalCompositeOperation = 'multiply';
-      oCtx.drawImage(canvases.engravingCanvas, 0, 0, W, H);
-      oCtx.restore();
-    }
-
-    // 3. Recortar a silueta real
-    if (hasCut) {
-      const mask = this._silhouetteMaskFromCut(canvases.cutCanvas, W, H);
-      oCtx.globalCompositeOperation = 'destination-in';
-      oCtx.drawImage(mask, 0, 0);
-    } else {
-      // Fallback: elipse
-      const ell = document.createElement('canvas');
-      ell.width = W; ell.height = H;
-      const eCtx = ell.getContext('2d');
-      eCtx.beginPath();
-      eCtx.ellipse(W/2, H/2, W/2, H/2, 0, 0, Math.PI*2);
-      eCtx.fill();
-      oCtx.globalCompositeOperation = 'destination-in';
-      oCtx.drawImage(ell, 0, 0);
-    }
-
-    // 4. Dibujar en canvas principal con sombra
+  _drawPlaceholderEllipse(cx, cy, rx, ry, ctx) {
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 8;
-    ctx.drawImage(off, x, y);
-    ctx.restore();
-
-    // 5. Agujero superior
-    if (project.holes?.length > 0) {
-      const hole = project.holes[0];
-      const diam = ((hole.diametrMm || 2) / (project.widthMm || 30)) * w;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(x + w/2, y + diam * 1.5, diam/2, 0, Math.PI*2);
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fill();
-      ctx.restore();
-    }
-  }
-
-  _drawHardware(ctx, x, y, w, h, project) {
-    const hw = project.hardware?.[0];
-    if (!hw) return;
-    const finishColors = {
-      ACERO: '#b0bec5', PLATA: '#e0e0e0', DORADO: '#c9a96e',
-      ORO_ROSA: '#e8b4b8', NEGRO: '#333', OTRO: '#888'
-    };
-    const color = finishColors[hw.acabado || 'DORADO'] || '#c9a96e';
-    ctx.save();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    const holeY = y + w * 0.06;
-    const barLen = w * 0.35;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(x + w/2 - barLen/2, holeY - 8);
-    ctx.lineTo(x + w/2 + barLen/2, holeY - 8);
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(x + w/2, holeY - 22, 10, Math.PI * 0.1, Math.PI * 0.9, true);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  _renderLaser(ctx, W, H, mode, canvases, project) {
-    ctx.fillStyle = mode === 'COMPLETO' ? '#0a0a14' : '#ffffff';
-    ctx.fillRect(0, 0, W, H);
-
-    const pw = Math.round(W * 0.8);
-    const ph = Math.round(pw * (project.heightMm || 40) / (project.widthMm || 30));
-    const px = Math.round((W - pw) / 2);
-    const py = Math.round((H - ph) / 2);
-
-    const hasCut = !!(canvases.cutCanvas);
-
-    // Construir contenido de la pieza en offscreen
-    const off = document.createElement('canvas');
-    off.width = pw; off.height = ph;
-    const oCtx = off.getContext('2d');
-
-    if (mode === 'CORTE' || mode === 'COMPLETO') {
-      // Fondo blanco
-      oCtx.fillStyle = '#fff';
-      oCtx.fillRect(0, 0, pw, ph);
-    }
-
-    if ((mode === 'GRABADO' || mode === 'COMPLETO') && canvases.engravingCanvas) {
-      oCtx.fillStyle = '#fff';
-      oCtx.fillRect(0, 0, pw, ph);
-      const alpha = mode === 'COMPLETO' ? 0.85 : 1;
-      oCtx.globalAlpha = alpha;
-      oCtx.drawImage(canvases.engravingCanvas, 0, 0, pw, ph);
-      oCtx.globalAlpha = 1;
-    }
-
-    // En GRABADO: añadir el borde de corte como línea negra fina (se grabará también)
-    if (mode === 'GRABADO' && hasCut) {
-      // Redibujar el contorno del cutCanvas encima del grabado
-      oCtx.save();
-      oCtx.globalAlpha = 0.6;
-      oCtx.drawImage(canvases.cutCanvas, 0, 0, pw, ph);
-      oCtx.restore();
-    }
-
-    // Recortar a silueta real
-    if (hasCut) {
-      const mask = this._silhouetteMaskFromCut(canvases.cutCanvas, pw, ph);
-      oCtx.globalCompositeOperation = 'destination-in';
-      oCtx.drawImage(mask, 0, 0);
-    }
-
-    // Pintar en canvas principal
-    ctx.drawImage(off, px, py);
-
-    // Contorno de corte (línea roja visible encima)
-    if (mode === 'CORTE' || mode === 'COMPLETO') {
-      ctx.save();
-      ctx.strokeStyle = mode === 'COMPLETO' ? '#ff3333' : '#cc0000';
-      ctx.lineWidth = mode === 'COMPLETO' ? 1.5 : 2;
-      ctx.setLineDash([5, 3]);
-
-      if (hasCut) {
-        // Recolorear el contorno del cutCanvas a rojo
-        const tmp = document.createElement('canvas');
-        tmp.width = pw; tmp.height = ph;
-        const tCtx = tmp.getContext('2d');
-        tCtx.drawImage(canvases.cutCanvas, 0, 0, pw, ph);
-        const imgD = tCtx.getImageData(0, 0, pw, ph);
-        const d = imgD.data;
-        for (let i = 0; i < d.length; i += 4) {
-          const luma = d[i]*0.299 + d[i+1]*0.587 + d[i+2]*0.114;
-          if (luma < 120) {
-            d[i] = 200; d[i+1] = 0; d[i+2] = 0; d[i+3] = 255;
-          } else {
-            d[i+3] = 0; // transparente
-          }
-        }
-        tCtx.putImageData(imgD, 0, 0);
-        ctx.drawImage(tmp, px, py);
-      } else {
-        ctx.beginPath();
-        ctx.ellipse(px + pw/2, py + ph/2, pw/2, ph/2, 0, 0, Math.PI*2);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    // Agujero
-    if (project.holes?.length > 0 && (mode === 'CORTE' || mode === 'COMPLETO')) {
-      const hole = project.holes[0];
-      const diam = ((hole.diametrMm || 2) / (project.widthMm || 30)) * pw;
-      ctx.save();
-      ctx.strokeStyle = '#cc0000';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([3, 2]);
-      ctx.beginPath();
-      ctx.arc(px + pw/2, py + diam * 1.5, diam/2, 0, Math.PI*2);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Labels
-    ctx.save();
-    ctx.setLineDash([]);
-    ctx.font = '700 10px system-ui';
-    ctx.textAlign = 'center';
-    if (mode === 'CORTE') {
-      ctx.fillStyle = '#cc0000'; ctx.fillText('▷ CORTE', W/2, H - 8);
-    } else if (mode === 'GRABADO') {
-      ctx.fillStyle = '#333'; ctx.fillText('░ GRABADO', W/2, H - 8);
-    } else {
-      ctx.fillStyle = '#888'; ctx.fillText('◈ CORTE + GRABADO', W/2, H - 8);
-    }
-    if (project.widthMm && project.heightMm) {
-      ctx.fillStyle = '#666';
-      ctx.fillText(`${project.widthMm} × ${project.heightMm} mm`, W/2, H - 22);
-    }
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fill();
     ctx.restore();
   }
 }
