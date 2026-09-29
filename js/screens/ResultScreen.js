@@ -134,9 +134,10 @@ export class ResultScreen {
 
     // Cargar canvas de material (usa silueta real si existe)
     let materialCanvas = null;
+    let silhouetteCanvas = null; // silueta BN pura (negro=objeto) para clip en PreviewEngine
     if (project.imageId || project.engravingGeometryId) {
-      const silhouette = materialEngine.buildBasicSilhouette(300, 400, project.material, sourceCanvas);
-      materialCanvas = materialEngine.applyMaterial(silhouette, project.material || {});
+      silhouetteCanvas = materialEngine.buildBasicSilhouette(300, 400, project.material, sourceCanvas);
+      materialCanvas = materialEngine.applyMaterial(silhouetteCanvas, project.material || {});
     }
 
     // Cargar canvas de grabado
@@ -161,7 +162,7 @@ export class ResultScreen {
       project.widthMm || 30, project.heightMm || 40, engravingCanvas, project.engravingLevel || 'MEDIO', sourceCanvas
     );
 
-    this._canvases = { materialCanvas, engravingCanvas, cutCanvas, laserEngCanvas };
+    this._canvases = { materialCanvas, engravingCanvas, cutCanvas, laserEngCanvas, silhouetteCanvas };
 
     this._initMainCanvas(el, project);
   }
@@ -193,6 +194,7 @@ export class ResultScreen {
         materialCanvas: this._canvases.materialCanvas,
         engravingCanvas: this._canvases.engravingCanvas || this._canvases.laserEngCanvas,
         cutCanvas: this._canvases.cutCanvas,
+        silhouetteCanvas: this._canvases.silhouetteCanvas,
       }
     );
 
@@ -262,3 +264,4 @@ export class ResultScreen {
     project.status = 'ready';
   }
 }
+
