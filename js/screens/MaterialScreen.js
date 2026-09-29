@@ -37,6 +37,7 @@ export class MaterialScreen {
   constructor(app) {
     this.app = app;
     this._previewCanvas = null;
+    this._imageRatio = null; // alto/ancho de la imagen real (cargada async)
   }
  
   render() {
@@ -125,6 +126,9 @@ export class MaterialScreen {
           <input type="checkbox" id="lock-ratio" ${project.lockAspectRatio !== false ? 'checked' : ''}>
           <span>Mantener proporción</span>
         </label>
+        <div id="ratio-hint" style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; padding:6px 10px; background:rgba(201,169,110,0.07); border-radius:6px; display:none;">
+          📐 Proporción calculada de la imagen real
+        </div>
         ${!project.widthMm ? `
           <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; padding:6px 10px; background:rgba(201,169,110,0.07); border-radius:6px;">
             💡 Tamaño sugerido basado en la detección. Ajusta según el tamaño real que quieres cortar.
@@ -150,7 +154,47 @@ export class MaterialScreen {
  
     this._setupEvents(el, project, color, type);
     this._initPreviewCanvas(el, color, type);
+    // Cargar ratio real desde imagen asíncronamente
+    this._loadImageRatio(project, el);
     return el;
+  }
+
+  /** Carga la imagen del proyecto y extrae la proporción real (alto/ancho) */
+  async _loadImageRatio(project, el) {
+    if (!project.imageId) return;
+    try {
+      const data = await loadBlob(project.imageId);
+      if (!data) return;
+      const img = new Image();
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = data; });
+      const ratio = img.naturalHeight / img.naturalWidth;
+      if (!isFinite(ratio) || ratio <= 0) return;
+      this._imageRatio = ratio;
+
+      // Si los campos están vacíos o sólo uno tiene valor, rellenar/recalcular
+      const widthInput = el.querySelector('#width-mm');
+      const heightInput = el.querySelector('#height-mm');
+      const lockCheck = el.querySelector('#lock-ratio');
+      const hint = el.querySelector('#ratio-hint');
+
+      // Actualizar ratio interno del evento
+      widthInput.dispatchEvent(new CustomEvent('_ratioLoaded', { detail: { ratio } }));
+
+      if (widthInput.value && !heightInput.value) {
+        heightInput.value = (Math.round(parseFloat(widthInput.value) * ratio * 2) / 2).toFixed(1);
+      } else if (!widthInput.value && heightInput.value) {
+        widthInput.value = (Math.round(parseFloat(heightInput.value) / ratio * 2) / 2).toFixed(1);
+      }
+      // Si ambos vacíos, poner sugerencia con ratio real
+      if (!widthInput.value && !heightInput.value) {
+        widthInput.value = '40';
+        heightInput.value = (Math.round(40 * ratio * 2) / 2).toFixed(1);
+      }
+
+      if (hint && lockCheck?.checked) hint.style.display = 'block';
+    } catch (e) {
+      // No bloquear si falla la carga de imagen
+    }
   }
  
   // Estima tamaño en mm basado en piezas detectadas
@@ -158,7 +202,6 @@ export class MaterialScreen {
     const parts = project.selectedParts?.filter(p => p.kept) || project.detectedParts?.filter(p => p.kept) || [];
     const bodyPart = parts.find(p => p.type === 'body') || parts[0];
     if (bodyPart?.bounds) {
-      // La pieza "cuerpo floral" suele medir entre 30-60mm, estimamos proporcionalmente
       const aspectH = bodyPart.bounds.h / (bodyPart.bounds.w || 1);
       return { w: 40, h: Math.round(40 * aspectH * 2) / 2 || 40 };
     }
@@ -179,11 +222,9 @@ export class MaterialScreen {
     const H = canvas.height;
     const ctx = canvas.getContext('2d');
  
-    // Fondo oscuro
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, W, H);
  
-    // Forma de pendiente simplificada (elipse centrada)
     const cx = W / 2, cy = H / 2;
     const rx = Math.min(W * 0.35, 120), ry = Math.min(H * 0.42, 50);
  
@@ -192,16 +233,13 @@ export class MaterialScreen {
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     ctx.clip();
  
-    // Color base
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, W, H);
  
-    // Efecto según tipo
     this._applyEffect(ctx, type, color, cx - rx, cy - ry, rx * 2, ry * 2);
  
     ctx.restore();
  
-    // Contorno dorado
     ctx.save();
     ctx.strokeStyle = '#c9a96e66';
     ctx.lineWidth = 1.5;
@@ -210,7 +248,6 @@ export class MaterialScreen {
     ctx.stroke();
     ctx.restore();
  
-    // Etiqueta del tipo
     ctx.save();
     ctx.font = '600 11px system-ui';
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
@@ -241,7 +278,6 @@ export class MaterialScreen {
       }
       case 'ANTE': {
         this._addNoise(ctx, w * 2, h * 2, 6, 0.13);
-        // Tono cálido ligeramente más claro en el centro
         const soft = ctx.createRadialGradient(x + w/2, y + h/3, 0, x + w/2, y + h/2, Math.max(w, h) * 0.8);
         soft.addColorStop(0, 'rgba(255,220,180,0.12)');
         soft.addColorStop(1, 'rgba(0,0,0,0)');
@@ -258,7 +294,6 @@ export class MaterialScreen {
         met.addColorStop(1, 'rgba(255,255,255,0.4)');
         ctx.fillStyle = met;
         ctx.fillRect(x, y, w, h);
-        // Líneas de reflejo metálico
         ctx.strokeStyle = 'rgba(255,255,255,0.25)';
         ctx.lineWidth = 1;
         for (let i = 0; i < 3; i++) {
@@ -271,7 +306,6 @@ export class MaterialScreen {
       }
       case 'TEXTURIZADO': {
         this._addNoise(ctx, w * 2, h * 2, 3, 0.15);
-        // Líneas de textura
         ctx.save();
         ctx.globalAlpha = 0.08;
         ctx.strokeStyle = '#000';
@@ -345,7 +379,6 @@ export class MaterialScreen {
       if (v.length === 7) setColor(v);
     };
  
-    // Swatches de color
     el.querySelectorAll('.quick-color-swatch').forEach(swatch => {
       swatch.onclick = () => {
         el.querySelectorAll('.quick-color-swatch').forEach(s => s.style.outline = 'none');
@@ -355,7 +388,6 @@ export class MaterialScreen {
       };
     });
  
-    // Tipo de cuero
     el.querySelectorAll('.type-item').forEach(item => {
       item.onclick = () => {
         el.querySelectorAll('.type-item').forEach(i => i.classList.remove('selected'));
@@ -364,14 +396,23 @@ export class MaterialScreen {
       };
     });
  
-    // Proporción bloqueada
+    // Proporción: primero desde valores actuales, luego se actualiza cuando llega la imagen
     const widthInput = el.querySelector('#width-mm');
     const heightInput = el.querySelector('#height-mm');
     const lockCheck = el.querySelector('#lock-ratio');
+    const hint = el.querySelector('#ratio-hint');
+
+    // ratio interno: se inicializa desde los valores existentes y se actualiza con la imagen real
     let ratio = (parseFloat(widthInput.value) && parseFloat(heightInput.value))
       ? parseFloat(heightInput.value) / parseFloat(widthInput.value)
       : 1;
- 
+
+    // Cuando la imagen carga, actualiza el ratio (evento custom disparado desde _loadImageRatio)
+    widthInput.addEventListener('_ratioLoaded', (e) => {
+      ratio = e.detail.ratio;
+      if (hint && lockCheck?.checked) hint.style.display = 'block';
+    });
+
     widthInput.oninput = () => {
       if (lockCheck.checked && widthInput.value) {
         heightInput.value = (Math.round(parseFloat(widthInput.value) * ratio * 2) / 2).toFixed(1);
@@ -382,8 +423,16 @@ export class MaterialScreen {
         widthInput.value = (Math.round(parseFloat(heightInput.value) / ratio * 2) / 2).toFixed(1);
       }
     };
+    // Actualizar ratio cuando el usuario cambia un campo manualmente (sin lock)
     widthInput.onchange = () => {
-      if (parseFloat(widthInput.value)) ratio = parseFloat(heightInput.value) / parseFloat(widthInput.value);
+      if (parseFloat(widthInput.value) && parseFloat(heightInput.value)) {
+        ratio = parseFloat(heightInput.value) / parseFloat(widthInput.value);
+      }
+    };
+    heightInput.onchange = () => {
+      if (parseFloat(heightInput.value) && parseFloat(widthInput.value)) {
+        ratio = parseFloat(heightInput.value) / parseFloat(widthInput.value);
+      }
     };
   }
  
@@ -404,4 +453,3 @@ export class MaterialScreen {
     this.app.saveProject();
   }
 }
- 
