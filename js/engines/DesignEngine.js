@@ -1,168 +1,226 @@
-/**
- * DesignEngine
- * Extrae silueta exterior, dibujo interior y agujeros de la imagen original.
- * V1: operaciones sobre canvas 2D (raster).
- * La interfaz está preparada para sustituir por SVG/path en V2.
- */
-export class DesignEngine {
+// js/engines/DesignEngine.js
+
+class DesignEngine {
   /**
-   * Extrae el contorno de corte (silueta exterior) a partir de un canvas con la imagen.
-   * Devuelve un canvas con fondo blanco y negro = contorno.
-   * @param {HTMLCanvasElement} src
-   * @param {object} opts
-   * @returns {HTMLCanvasElement}
-   */
-  extractCutContour(src, opts = {}) {
-    const { threshold = 30, blur = 1 } = opts;
-    const W = src.width, H = src.height;
-    const dst = createCanvas(W, H);
-    const ctx = dst.getContext('2d');
-
-    const srcCtx = src.getContext('2d');
-    const imgData = srcCtx.getImageData(0, 0, W, H);
-    const { data } = imgData;
-
-    // Fondo blanco
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, W, H);
-
-    // Canny simplificado: detección de diferencia con borde
-    const out = ctx.createImageData(W, H);
-    const o = out.data;
-
-    const sobelX = [-1,0,1,-2,0,2,-1,0,1];
-    const sobelY = [-1,-2,-1,0,0,0,1,2,1];
-
-    for (let y = 1; y < H-1; y++) {
-      for (let x = 1; x < W-1; x++) {
-        let gx = 0, gy = 0;
-        for (let ky = -1; ky <= 1; ky++) {
-          for (let kx = -1; kx <= 1; kx++) {
-            const idx = ((y+ky)*W + (x+kx)) * 4;
-            const luma = (data[idx]*0.299 + data[idx+1]*0.587 + data[idx+2]*0.114);
-            const ki = (ky+1)*3 + (kx+1);
-            gx += luma * sobelX[ki];
-            gy += luma * sobelY[ki];
-          }
-        }
-        const mag = Math.sqrt(gx*gx + gy*gy);
-        const i = (y*W+x)*4;
-        const v = mag > threshold ? 0 : 255;
-        o[i] = o[i+1] = o[i+2] = v;
-        o[i+3] = 255;
-      }
-    }
-
-    ctx.putImageData(out, 0, 0);
-    if (blur > 0) this._blur(ctx, W, H, blur);
-    return dst;
-  }
-
-  /**
-   * Extrae el dibujo interior (líneas de grabado).
-   * @param {HTMLCanvasElement} src
-   * @param {object} opts
+   * Extract engraving lines using Sobel edge detection.
+   * If opts.silhouetteMask is provided (white=object, black=bg),
+   * pixels outside the object are set to white (no engraving).
+   *
+   * @param {HTMLImageElement|HTMLCanvasElement} src
+   * @param {Object} opts
+   * @param {number} [opts.threshold=60]      - Sobel magnitude threshold (0-255)
+   * @param {HTMLCanvasElement} [opts.silhouetteMask] - optional mask canvas
    * @returns {HTMLCanvasElement}
    */
   extractEngravingLines(src, opts = {}) {
-    const { threshold = 60, invert = true } = opts;
-    const W = src.width, H = src.height;
-    const dst = createCanvas(W, H);
-    const ctx = dst.getContext('2d');
+    const threshold = opts.threshold ?? 60;
+    const mask = opts.silhouetteMask ?? null;
 
-    const srcCtx = src.getContext('2d');
-    const imgData = srcCtx.getImageData(0, 0, W, H);
-    const { data } = imgData;
+    const W = src.naturalWidth || src.width;
+    const H = src.naturalHeight || src.height;
 
-    const out = ctx.createImageData(W, H);
-    const o = out.data;
+    // Read source pixels
+    const srcCanvas = document.createElement('canvas');
+    srcCanvas.width = W; srcCanvas.height = H;
+    const srcCtx = srcCanvas.getContext('2d');
+    srcCtx.drawImage(src, 0, 0);
+    const srcData = srcCtx.getImageData(0, 0, W, H).data;
 
-    // Umbralización + Sobel para líneas finas
-    const sobelX = [-1,0,1,-2,0,2,-1,0,1];
-    const sobelY = [-1,-2,-1,0,0,0,1,2,1];
+    // Read mask pixels if provided
+    let maskData = null;
+    if (mask) {
+      const mCtx = mask.getContext('2d');
+      maskData = mCtx.getImageData(0, 0, W, H).data;
+    }
 
-    for (let y = 1; y < H-1; y++) {
-      for (let x = 1; x < W-1; x++) {
-        let gx = 0, gy = 0;
-        for (let ky = -1; ky <= 1; ky++) {
-          for (let kx = -1; kx <= 1; kx++) {
-            const idx = ((y+ky)*W + (x+kx)) * 4;
-            const luma = (data[idx]*0.299 + data[idx+1]*0.587 + data[idx+2]*0.114);
-            const ki = (ky+1)*3 + (kx+1);
-            gx += luma * sobelX[ki];
-            gy += luma * sobelY[ki];
-          }
+    // Compute greyscale
+    const grey = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++) {
+      const r = srcData[i * 4];
+      const g = srcData[i * 4 + 1];
+      const b = srcData[i * 4 + 2];
+      grey[i] = 0.299 * r + 0.587 * g + 0.114 * b;
+    }
+
+    // Sobel
+    const out = document.createElement('canvas');
+    out.width = W; out.height = H;
+    const outCtx = out.getContext('2d');
+    const outImg = outCtx.createImageData(W, H);
+    const o = outImg.data;
+
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+
+        // If mask says this pixel is background → white output (no engraving)
+        if (maskData && maskData[i * 4] === 0) {
+          o[i * 4 + 0] = 255;
+          o[i * 4 + 1] = 255;
+          o[i * 4 + 2] = 255;
+          o[i * 4 + 3] = 255;
+          continue;
         }
+
+        // Border pixels → white
+        if (x === 0 || x === W - 1 || y === 0 || y === H - 1) {
+          o[i * 4 + 0] = 255;
+          o[i * 4 + 1] = 255;
+          o[i * 4 + 2] = 255;
+          o[i * 4 + 3] = 255;
+          continue;
+        }
+
+        const tl = grey[(y-1)*W+(x-1)], tc = grey[(y-1)*W+x], tr = grey[(y-1)*W+(x+1)];
+        const ml = grey[y*W+(x-1)],                            mr = grey[y*W+(x+1)];
+        const bl = grey[(y+1)*W+(x-1)], bc = grey[(y+1)*W+x], br = grey[(y+1)*W+(x+1)];
+
+        const gx = -tl - 2*ml - bl + tr + 2*mr + br;
+        const gy = -tl - 2*tc - tr + bl + 2*bc + br;
         const mag = Math.sqrt(gx*gx + gy*gy);
-        const i = (y*W+x)*4;
-        let v = mag > threshold ? 0 : 255;
-        if (invert) v = 255 - v;
-        o[i] = o[i+1] = o[i+2] = v;
-        o[i+3] = 255;
+
+        // Invert: edges = black, smooth areas = white
+        const v = mag > threshold ? 0 : 255;
+        o[i * 4 + 0] = v;
+        o[i * 4 + 1] = v;
+        o[i * 4 + 2] = v;
+        o[i * 4 + 3] = 255;
       }
     }
 
-    // Fondo blanco
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, W, H);
-    ctx.putImageData(out, 0, 0);
-    return dst;
+    outCtx.putImageData(outImg, 0, 0);
+    return out;
   }
 
   /**
-   * Operación suavizar: gaussian blur suave sobre canvas.
+   * Extract cut contour.
+   * If src has alpha channel (PNG without background), threshold alpha directly
+   * for a clean silhouette edge — much cleaner than Sobel on an alpha-masked image.
+   * Otherwise fall back to Sobel with a low threshold.
+   *
+   * @param {HTMLImageElement|HTMLCanvasElement} src
+   * @param {Object} opts
+   * @param {number} [opts.threshold=30]
+   * @returns {HTMLCanvasElement}
+   */
+  extractCutContour(src, opts = {}) {
+    const threshold = opts.threshold ?? 30;
+
+    const W = src.naturalWidth || src.width;
+    const H = src.naturalHeight || src.height;
+
+    const tmp = document.createElement('canvas');
+    tmp.width = W; tmp.height = H;
+    const tCtx = tmp.getContext('2d');
+    tCtx.drawImage(src, 0, 0);
+    const srcData = tCtx.getImageData(0, 0, W, H);
+    const pixels = srcData.data;
+
+    // Check if image has meaningful alpha
+    let hasAlpha = false;
+    for (let i = 3; i < pixels.length; i += 4) {
+      if (pixels[i] < 245) { hasAlpha = true; break; }
+    }
+
+    const out = document.createElement('canvas');
+    out.width = W; out.height = H;
+    const outCtx = out.getContext('2d');
+    const outImg = outCtx.createImageData(W, H);
+    const o = outImg.data;
+
+    // Fill white
+    for (let i = 0; i < W * H; i++) {
+      o[i*4]=255; o[i*4+1]=255; o[i*4+2]=255; o[i*4+3]=255;
+    }
+
+    if (hasAlpha) {
+      // Build object mask from alpha, then find boundary pixels
+      const isMask = new Uint8Array(W * H);
+      for (let i = 0; i < W * H; i++) {
+        isMask[i] = pixels[i * 4 + 3] > 10 ? 1 : 0;
+      }
+      for (let y = 1; y < H - 1; y++) {
+        for (let x = 1; x < W - 1; x++) {
+          const i = y * W + x;
+          if (!isMask[i]) continue;
+          const isEdge = !isMask[(y-1)*W+x] || !isMask[(y+1)*W+x]
+                      || !isMask[y*W+(x-1)] || !isMask[y*W+(x+1)];
+          if (isEdge) {
+            o[i*4]=0; o[i*4+1]=0; o[i*4+2]=0; o[i*4+3]=255;
+          }
+        }
+      }
+    } else {
+      // Sobel with low threshold
+      const grey = new Float32Array(W * H);
+      for (let i = 0; i < W * H; i++) {
+        grey[i] = 0.299*pixels[i*4] + 0.587*pixels[i*4+1] + 0.114*pixels[i*4+2];
+      }
+      for (let y = 1; y < H - 1; y++) {
+        for (let x = 1; x < W - 1; x++) {
+          const i = y * W + x;
+          const tl=grey[(y-1)*W+(x-1)], tc=grey[(y-1)*W+x], tr=grey[(y-1)*W+(x+1)];
+          const ml=grey[y*W+(x-1)],                          mr=grey[y*W+(x+1)];
+          const bl=grey[(y+1)*W+(x-1)], bc=grey[(y+1)*W+x], br=grey[(y+1)*W+(x+1)];
+          const gx = -tl-2*ml-bl+tr+2*mr+br;
+          const gy = -tl-2*tc-tr+bl+2*bc+br;
+          const mag = Math.sqrt(gx*gx+gy*gy);
+          if (mag > threshold) {
+            o[i*4]=0; o[i*4+1]=0; o[i*4+2]=0; o[i*4+3]=255;
+          }
+        }
+      }
+    }
+
+    outCtx.putImageData(outImg, 0, 0);
+    return out;
+  }
+
+  /**
+   * Apply a single 3×3 box blur pass in-place on a canvas.
    */
   applySmooth(canvas) {
-    const ctx = canvas.getContext('2d');
-    this._blur(ctx, canvas.width, canvas.height, 1.5);
-    return canvas;
+    const W = canvas.width, H = canvas.height;
+    this._blur(canvas.getContext('2d'), W, H, 1);
   }
 
   /**
-   * Operación simplificar: posterización (reduce tonos intermedios a B/N).
+   * Posterize to pure B/W in-place.
    */
   applySimplify(canvas, threshold = 128) {
     const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height;
-    const d = ctx.getImageData(0, 0, W, H);
-    const px = d.data;
-    for (let i = 0; i < px.length; i += 4) {
-      const luma = px[i]*0.299 + px[i+1]*0.587 + px[i+2]*0.114;
-      const v = luma < threshold ? 0 : 255;
-      px[i] = px[i+1] = px[i+2] = v;
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const v = (d[i] + d[i+1] + d[i+2]) / 3 > threshold ? 255 : 0;
+      d[i] = d[i+1] = d[i+2] = v;
     }
-    ctx.putImageData(d, 0, 0);
-    return canvas;
+    ctx.putImageData(img, 0, 0);
   }
 
-  // ── Privado ──────────────────────────────────────────────────────────────────
-
-  _blur(ctx, W, H, radius) {
-    // Box blur simple 3x3 aplicado N veces
-    const passes = Math.round(radius);
+  _blur(ctx, W, H, passes) {
     for (let p = 0; p < passes; p++) {
-      const d = ctx.getImageData(0, 0, W, H);
-      const src = new Uint8ClampedArray(d.data);
-      const out = d.data;
-      for (let y = 1; y < H-1; y++) {
-        for (let x = 1; x < W-1; x++) {
+      const img = ctx.getImageData(0, 0, W, H);
+      const src = img.data;
+      const dst = new Uint8ClampedArray(src.length);
+      for (let y = 1; y < H - 1; y++) {
+        for (let x = 1; x < W - 1; x++) {
           for (let c = 0; c < 3; c++) {
-            let sum = 0;
-            for (let dy = -1; dy <= 1; dy++)
-              for (let dx = -1; dx <= 1; dx++)
-                sum += src[((y+dy)*W+(x+dx))*4+c];
-            out[(y*W+x)*4+c] = sum / 9;
+            let s = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                s += src[((y+dy)*W+(x+dx))*4+c];
+              }
+            }
+            dst[(y*W+x)*4+c] = s / 9;
           }
-          out[(y*W+x)*4+3] = 255;
+          dst[(y*W+x)*4+3] = 255;
         }
       }
-      ctx.putImageData(d, 0, 0);
+      img.data.set(dst);
+      ctx.putImageData(img, 0, 0);
     }
   }
 }
 
-function createCanvas(w, h) {
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  return c;
-}
+export const designEngine = new DesignEngine();
