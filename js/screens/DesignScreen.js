@@ -472,13 +472,25 @@ export class DesignScreen {
       this.app.showToast('Re-extraído');
     };
 
-    // Intensidad
+    // Intensidad: cambia visualmente Y regenera el grabado con umbral diferente
+    // SUAVE = umbral bajo (5) → pocas líneas, solo bordes muy marcados
+    // MEDIO = umbral medio (18) → detalle moderado
+    // FUERTE = umbral alto (35) → muchas líneas, mucho detalle
+    const levelParams = { SUAVE: { threshold: 5, blurRadius: 12 }, MEDIO: { threshold: 18, blurRadius: 8 }, FUERTE: { threshold: 35, blurRadius: 4 } };
     el.querySelectorAll('.intensity-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         el.querySelectorAll('.intensity-btn').forEach(b => {
           b.className = b.className.replace('btn-secondary','btn-ghost').replace(' active-intensity','');
         });
         btn.className = btn.className.replace('btn-ghost','btn-secondary') + ' active-intensity';
+        // Regenerar grabado con parámetros del nivel seleccionado
+        const params = levelParams[btn.dataset.level] || levelParams.MEDIO;
+        if (this._sourceImg) {
+          this._engCanvas = designEngine.extractEngravingLines(this._sourceImg, {
+            threshold: params.threshold, blurRadius: params.blurRadius, silhouetteMask: this._silCanvas,
+          });
+          this._drawResult();
+        }
       };
     });
 
