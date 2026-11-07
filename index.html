@@ -1,65 +1,899 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#c9a96e">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="TAC JOYAS">
-  <title>TAC JOYAS</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
-  <link rel="stylesheet" href="./css/base.css">
-  <link rel="stylesheet" href="./css/components.css">
-  <link rel="stylesheet" href="./css/screens.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#0d0d1a">
+<title>TAC JOYAS</title>
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --bg: #0d0d1a;
+    --surface: #161628;
+    --surface2: #1e1e35;
+    --gold: #c8a035;
+    --gold2: #e8c060;
+    --text: #f0f0f8;
+    --muted: #8888aa;
+    --border: rgba(200,160,53,0.2);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; min-height: 100dvh; overflow-x: hidden; }
+
+  /* ── HEADER ── */
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .header h1 { font-size: 1rem; font-weight: 800; letter-spacing: 2px; color: var(--gold); }
+  .header .step-info { font-size: 0.75rem; color: var(--muted); }
+
+  /* ── STEPS BAR ── */
+  .steps { display: flex; gap: 6px; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .step { flex: 1; height: 4px; border-radius: 2px; background: var(--surface2); transition: background .3s; }
+  .step.done { background: var(--gold); }
+  .step.active { background: var(--gold2); }
+
+  /* ── BODY ── */
+  .body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* ── CARDS ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .card-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+
+  /* ── BUTTONS ── */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 16px; border-radius: 8px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all .15s; width: 100%; }
+  .btn-primary { background: var(--gold); color: #000; }
+  .btn-primary:active { background: var(--gold2); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:active { border-color: var(--gold); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn-export { padding: 18px; font-size: 1rem; border-radius: 10px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; }
+  .tab { flex: 1; padding: 10px 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 0.8rem; font-weight: 600; cursor: pointer; text-align: center; transition: all .15s; }
+  .tab.active { background: var(--gold); color: #000; border-color: var(--gold); }
+
+  /* ── UPLOAD ZONE ── */
+  .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px 16px; text-align: center; cursor: pointer; transition: border-color .2s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .upload-zone:active, .upload-zone.drag { border-color: var(--gold); }
+  .upload-zone .icon { font-size: 2.5rem; }
+  .upload-zone .label { color: var(--muted); font-size: 0.85rem; }
+  .upload-zone img { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; }
+  #file-input { display: none; }
+
+  /* ── CANVAS ── */
+  #canvas-wrap { position: relative; background: #111; border-radius: var(--radius); overflow: hidden; touch-action: none; }
+  #canvas-result { display: block; width: 100%; height: auto; }
+  #canvas-draw { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+
+  /* ── SLIDER ── */
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .slider-row label { font-size: 0.75rem; color: var(--muted); white-space: nowrap; min-width: 70px; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--gold); }
+  .slider-row .val { font-size: 0.75rem; color: var(--gold); min-width: 28px; text-align: right; }
+
+  /* ── MATERIAL COLOR GRID ── */
+  .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .color-swatch { width: 100%; aspect-ratio: 1; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all .15s; }
+  .color-swatch.selected { border-color: var(--gold2); transform: scale(1.1); }
+
+  /* ── DRAW TOOLBAR ── */
+  .draw-tools { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  .draw-tools .btn { min-width: 72px; width: auto; padding: 8px 12px; font-size: 0.8rem; }
+
+  /* ── TOAST ── */
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--gold); color: #000; padding: 10px 20px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; transition: transform .3s; z-index: 999; pointer-events: none; }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── FOOTER NAV ── */
+  .footer { padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border); }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex-direction: column; min-height: 100dvh; }
+  .screen.active { display: flex; }
+
+  /* ── EXPORT PREVIEW ── */
+  #preview-canvas-wrap { background: #fff; border-radius: var(--radius); overflow: hidden; }
+  #preview-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+
+  /* ── MEDIDAS ── */
+  .dim-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dim-field { display: flex; flex-direction: column; gap: 4px; }
+  .dim-field label { font-size: 0.75rem; color: var(--muted); }
+  .dim-field input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 1rem; width: 100%; }
+  .dim-field input:focus { outline: none; border-color: var(--gold); }
+</style>
 </head>
 <body>
-  <div id="pin-screen" style="display:none;position:fixed;inset:0;background:#1a1a1a;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Georgia',serif;">
-    <div style="color:#c9a96e;font-size:1.1rem;letter-spacing:0.3em;margin-bottom:0.5rem;">✦ TAC JOYAS</div>
-    <div style="color:#888;font-size:0.75rem;letter-spacing:0.2em;margin-bottom:2.5rem;">DISEÑO ARTESANAL · LÁSER</div>
-    <div style="color:#ccc;font-size:0.85rem;letter-spacing:0.15em;margin-bottom:1.2rem;">INTRODUCE TU PIN</div>
-    <input id="pin-input" type="password" inputmode="numeric" maxlength="6"
-      style="background:#2a2a2a;border:1px solid #c9a96e44;border-radius:8px;color:#c9a96e;font-size:1.5rem;letter-spacing:0.4em;text-align:center;padding:0.7rem 1.2rem;width:160px;outline:none;"
-      placeholder="······" autocomplete="off" />
-    <div id="pin-error" style="color:#e05c5c;font-size:0.8rem;margin-top:0.8rem;min-height:1.2rem;letter-spacing:0.1em;"></div>
-    <button onclick="checkPin()"
-      style="margin-top:1.2rem;background:#c9a96e;color:#1a1a1a;border:none;border-radius:8px;padding:0.7rem 2rem;font-size:0.9rem;letter-spacing:0.15em;cursor:pointer;">
-      ENTRAR
-    </button>
+
+<!-- ══════════════════════════════════════════
+     PANTALLA 1 — FOTO + MATERIAL
+═══════════════════════════════════════════ -->
+<div class="screen active" id="screen-foto">
+  <div class="header">
+    <h1>✦ TAC JOYAS</h1>
+    <span class="step-info">Paso 1 de 3</span>
   </div>
-  <div id="app" style="display:none;"></div>
-  <script>
-    (function() {
-      var PIN = '161725';
-      var KEY = 'tacjoyas_auth';
-      function checkPin() {
-        var val = document.getElementById('pin-input').value;
-        if (val === PIN) {
-          sessionStorage.setItem(KEY, '1');
-          document.getElementById('pin-screen').style.display = 'none';
-          document.getElementById('app').style.display = '';
-        } else {
-          document.getElementById('pin-error').textContent = 'PIN incorrecto';
-          document.getElementById('pin-input').value = '';
-          document.getElementById('pin-input').focus();
-        }
-      }
-      window.checkPin = checkPin;
-      document.addEventListener('DOMContentLoaded', function() {
-        if (sessionStorage.getItem(KEY) === '1') {
-          document.getElementById('pin-screen').style.display = 'none';
-          document.getElementById('app').style.display = '';
-        } else {
-          document.getElementById('pin-screen').style.display = 'flex';
-        }
-        document.getElementById('pin-input').addEventListener('keydown', function(e) {
-          if (e.key === 'Enter') checkPin();
-        });
-      });
-    })();
-  </script>
-  <script type="module" src="./js/app.js"></script>
+  <div class="steps">
+    <div class="step active"></div>
+    <div class="step"></div>
+    <div class="step"></div>
+  </div>
+
+  <div class="body" style="flex:1; overflow-y:auto;">
+
+    <div class="card">
+      <div class="card-title">📷 Foto de la pieza</div>
+      <div class="upload-zone" id="upload-zone">
+        <span class="icon">📷</span>
+        <span class="label">Toca para subir foto o tomar una</span>
+      </div>
+      <input type="file" id="file-input" accept="image/*" capture="environment">
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎨 Material y color</div>
+      <div class="color-grid" id="color-grid">
+        <!-- generado por JS -->
+      </div>
+      <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
+        <div id="color-preview" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);"></div>
+        <div>
+          <div id="color-name" style="font-weight:700; font-size:0.9rem;">Cuero marrón</div>
+          <div id="color-type" style="font-size:0.75rem; color:var(--muted);">Natural</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📐 Medidas (mm)</div>
+      <div class="dim-row">
+        <div class="dim-field">
+          <label>Ancho</label>
+          <input type="number" id="input-width" placeholder="40" min="5" max="200" step="0.5">
+        </div>
+        <div class="dim-field">
+          <label>Alto</label>
+          <input type="number" id="input-height" placeholder="auto" min="5" max="200" step="0.5">
+        </div>
+      </div>
+      <div style="margin-top:8px; font-size:0.75rem; color:var(--muted);" id="ratio-hint">Sube una foto para calcular el alto automáticamente</div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <button class="btn btn-primary" id="btn-step1-next">Continuar → Diseñar</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PANTALLA 2 — DISEÑAR / AJUSTAR
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-design">
+  <div class="header">
+    <button class="btn btn-ghost" id="btn-design-back" style="width:auto;padding:6px 12px;">← Volver</button>
+    <h1>✦ DISEÑAR</h1>
+    <span class="step-info">Paso 2 de 3</span>
+  </div>
+  <div class="steps">
+    <div class="step done"></div>
+    <div class="step active"></div>
+    <div class="step"></div>
+  </div>
+
+  <div class="body" style="flex:1; overflow-y:auto; padding:0;">
+
+    <!-- Vista del canvas -->
+    <div id="canvas-wrap">
+      <canvas id="canvas-result"></canvas>
+      <canvas id="canvas-draw"></canvas>
+    </div>
+
+    <!-- Tabs de vista -->
+    <div style="padding:10px 12px 0;">
+      <div class="tabs" id="view-tabs">
+        <div class="tab active" data-view="GRABADO">Grabado</div>
+        <div class="tab" data-view="CORTE">Silueta</div>
+        <div class="tab" data-view="PREVIEW">Color real</div>
+      </div>
+    </div>
+
+    <!-- Intensidad -->
+    <div style="padding:10px 12px 0;">
+      <div class="card-title" style="margin-bottom:8px;">Intensidad del grabado</div>
+      <div class="tabs" id="intensity-tabs">
+        <div class="tab" data-level="SUAVE">🪶 Suave</div>
+        <div class="tab active" data-level="MEDIO">✦ Medio</div>
+        <div class="tab" data-level="FUERTE">🔥 Fuerte</div>
+      </div>
+    </div>
+
+    <!-- Herramientas de dibujo -->
+    <div style="padding:10px 12px 0;">
+      <div class="card-title" style="margin-bottom:8px;">Retocar manualmente</div>
+      <div class="draw-tools">
+        <button class="btn btn-secondary" id="tool-draw">✏️ Dibujar</button>
+        <button class="btn btn-ghost" id="tool-erase">🧹 Borrar</button>
+        <button class="btn btn-ghost" id="tool-undo">↩ Deshacer</button>
+        <button class="btn btn-ghost" id="tool-reextract">↺ Reextraer</button>
+      </div>
+      <div class="slider-row" style="margin-top:10px;">
+        <label>Pincel</label>
+        <input type="range" id="slider-brush" min="2" max="40" value="8">
+        <span class="val" id="lbl-brush">8</span>
+      </div>
+    </div>
+
+    <div style="padding:10px 12px 16px;"></div>
+  </div>
+
+  <div class="footer">
+    <button class="btn btn-primary" id="btn-design-next">Continuar → Exportar</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PANTALLA 3 — EXPORTAR
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-export">
+  <div class="header">
+    <button class="btn btn-ghost" id="btn-export-back" style="width:auto;padding:6px 12px;">← Volver</button>
+    <h1>✦ EXPORTAR</h1>
+    <span class="step-info">Paso 3 de 3</span>
+  </div>
+  <div class="steps">
+    <div class="step done"></div>
+    <div class="step done"></div>
+    <div class="step active"></div>
+  </div>
+
+  <div class="body" style="flex:1; overflow-y:auto;">
+
+    <!-- Preview resultado -->
+    <div class="card">
+      <div class="card-title">Vista previa — resultado final</div>
+      <div id="preview-canvas-wrap">
+        <canvas id="canvas-preview"></canvas>
+      </div>
+      <div style="margin-top:10px; display:flex; gap:8px;">
+        <div class="tab active" data-prev="REALISTA" id="prev-tab-real" onclick="app.setPreviewMode('REALISTA')" style="cursor:pointer;">Color real</div>
+        <div class="tab" data-prev="CORTE" id="prev-tab-corte" onclick="app.setPreviewMode('CORTE')" style="cursor:pointer;">Solo corte</div>
+        <div class="tab" data-prev="GRABADO" id="prev-tab-grab" onclick="app.setPreviewMode('GRABADO')" style="cursor:pointer;">Solo grabado</div>
+      </div>
+    </div>
+
+    <!-- Medidas finales -->
+    <div class="card">
+      <div class="card-title">Resumen del diseño</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
+        <div><div style="font-size:1.3rem;font-weight:800;color:var(--gold);" id="sum-w">—</div><div style="font-size:0.7rem;color:var(--muted);">Ancho mm</div></div>
+        <div><div style="font-size:1.3rem;font-weight:800;color:var(--gold);" id="sum-h">—</div><div style="font-size:0.7rem;color:var(--muted);">Alto mm</div></div>
+        <div><div style="font-size:1.1rem;font-weight:800;color:var(--gold);text-transform:uppercase;" id="sum-level">Medio</div><div style="font-size:0.7rem;color:var(--muted);">Grabado</div></div>
+      </div>
+    </div>
+
+    <!-- Exportar -->
+    <div class="card">
+      <div class="card-title">Exportar para LaserGRBL</div>
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-export" id="btn-dl-corte">⬇ CORTE<br><span style="font-size:0.7rem;font-weight:400;color:var(--muted);">silueta exterior</span></button>
+        <button class="btn btn-secondary btn-export" id="btn-dl-grabado">⬇ GRABADO<br><span style="font-size:0.7rem;font-weight:400;color:var(--muted);">textura interior</span></button>
+      </div>
+      <button class="btn btn-ghost" id="btn-dl-preview" style="margin-top:10px;">⬇ Exportar preview PNG</button>
+    </div>
+
+    <div class="card">
+      <button class="btn btn-primary" id="btn-nuevo">✦ Nuevo diseño</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast">Guardado</div>
+
+<script type="module">
+// ═══════════════════════════════════════════════════════════
+//  STORAGE (IndexedDB simple)
+// ═══════════════════════════════════════════════════════════
+const DB_NAME = 'tac-joyas-db', STORE = 'blobs';
+let _db = null;
+async function getDB() {
+  if (_db) return _db;
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(STORE);
+    req.onsuccess = e => { _db = e.target.result; res(_db); };
+    req.onerror = rej;
+  });
+}
+async function saveBlob(key, val) {
+  const db = await getDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(val, key);
+    tx.oncomplete = res; tx.onerror = rej;
+  });
+}
+async function loadBlob(key) {
+  const db = await getDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get(key);
+    req.onsuccess = () => res(req.result);
+    req.onerror = rej;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  MATERIALES
+// ═══════════════════════════════════════════════════════════
+const MATERIALS = [
+  { name:'Cuero marrón',   type:'Natural',   color:'#8B4513' },
+  { name:'Cuero rojo',     type:'Natural',   color:'#8B1A1A' },
+  { name:'Cuero negro',    type:'Natural',   color:'#1a1a1a' },
+  { name:'Cuero camel',    type:'Natural',   color:'#C8824A' },
+  { name:'Cuero crema',    type:'Natural',   color:'#E8D5A3' },
+  { name:'Corcho natural', type:'Corcho',    color:'#C8A878' },
+  { name:'Corcho oscuro',  type:'Corcho',    color:'#8B6914' },
+  { name:'Madera clara',   type:'Madera',    color:'#DEB887' },
+  { name:'Madera oscura',  type:'Madera',    color:'#5C3317' },
+  { name:'Fieltro verde',  type:'Fieltro',   color:'#4A7C5C' },
+];
+
+// ═══════════════════════════════════════════════════════════
+//  LASER ENGINE (extracción silueta + grabado + corte)
+// ═══════════════════════════════════════════════════════════
+function extractSilhouette(src, W, H) {
+  const tmp = document.createElement('canvas');
+  tmp.width = W; tmp.height = H;
+  const tCtx = tmp.getContext('2d');
+  tCtx.drawImage(src, 0, 0, W, H);
+  const imgData = tCtx.getImageData(0, 0, W, H);
+  const d = imgData.data;
+
+  // Color de fondo desde 4 esquinas
+  let bgR=0, bgG=0, bgB=0;
+  const corners = [0, (W-1)*4, (H-1)*W*4, ((H-1)*W+W-1)*4];
+  corners.forEach(i => { bgR+=d[i]; bgG+=d[i+1]; bgB+=d[i+2]; });
+  bgR/=4; bgG/=4; bgB/=4;
+
+  const out = document.createElement('canvas');
+  out.width=W; out.height=H;
+  const oCtx = out.getContext('2d');
+  const oData = oCtx.createImageData(W, H);
+  const o = oData.data;
+
+  for (let i=0; i<d.length; i+=4) {
+    const diff = Math.abs(d[i]-bgR)+Math.abs(d[i+1]-bgG)+Math.abs(d[i+2]-bgB);
+    const v = diff > 30 ? 0 : 255;
+    o[i]=o[i+1]=o[i+2]=v; o[i+3]=255;
+  }
+
+  // Flood-fill desde esquinas → fondo exterior blanco
+  const visited = new Uint8Array(W*H);
+  const queue = [];
+  const push = (x,y) => {
+    if (x<0||x>=W||y<0||y>=H) return;
+    const i=y*W+x;
+    if (visited[i]) return;
+    if (o[i*4]<128) return;
+    visited[i]=1; o[i*4]=o[i*4+1]=o[i*4+2]=255;
+    queue.push(i);
+  };
+  for (let x=0;x<W;x++) { push(x,0); push(x,H-1); }
+  for (let y=0;y<H;y++) { push(0,y); push(W-1,y); }
+  let qi=0;
+  while (qi<queue.length) {
+    const idx=queue[qi++]; const x=idx%W, y=(idx/W)|0;
+    push(x-1,y); push(x+1,y); push(x,y-1); push(x,y+1);
+  }
+
+  oCtx.putImageData(oData, 0, 0);
+  return out;
+}
+
+function buildOuterEdge(silCanvas, W, H) {
+  const ctx = silCanvas.getContext('2d');
+  const data = ctx.getImageData(0,0,W,H).data;
+  const out = document.createElement('canvas');
+  out.width=W; out.height=H;
+  const oCtx = out.getContext('2d');
+  const oData = oCtx.createImageData(W,H);
+  const o = oData.data;
+  for (let i=0;i<o.length;i+=4){o[i]=o[i+1]=o[i+2]=255;o[i+3]=255;}
+  for (let y=1;y<H-1;y++) {
+    for (let x=1;x<W-1;x++) {
+      const ci=(y*W+x)*4;
+      if (data[ci]>128) continue;
+      const n=[(y-1)*W+x,(y+1)*W+x,y*W+(x-1),y*W+(x+1)];
+      if (n.some(ni=>data[ni*4]>128)) { o[ci]=o[ci+1]=o[ci+2]=0; }
+    }
+  }
+  oCtx.putImageData(oData,0,0);
+  return out;
+}
+
+// Grabado con grises reales según nivel
+// SUAVE: solo bordes muy oscuros, poco contraste → grabado ligero
+// MEDIO: moderado
+// FUERTE: muchas zonas, negro intenso → grabado profundo
+function buildEngraving(src, W, H, level='MEDIO') {
+  const params = {
+    SUAVE:  { threshold: 160, minOutput: 200 },
+    MEDIO:  { threshold: 200, minOutput: 100 },
+    FUERTE: { threshold: 230, minOutput: 0   },
+  };
+  const { threshold, minOutput } = params[level] || params.MEDIO;
+
+  const c = document.createElement('canvas');
+  c.width=W; c.height=H;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(src,0,0,W,H);
+  const imgData=ctx.getImageData(0,0,W,H);
+  const d=imgData.data;
+  for (let i=0;i<d.length;i+=4) {
+    const luma=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    let v;
+    if (luma<threshold) {
+      v = minOutput + (255-minOutput)*(luma/threshold);
+      v = Math.round(v);
+    } else { v=255; }
+    d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
+  }
+  ctx.putImageData(imgData,0,0);
+
+  // Recortar a silueta
+  const sil = extractSilhouette(src,W,H);
+  const mask = bnToAlpha(sil,W,H);
+  ctx.globalCompositeOperation='destination-in';
+  ctx.drawImage(mask,0,0);
+  ctx.globalCompositeOperation='source-over';
+  return c;
+}
+
+function bnToAlpha(bn, W, H) {
+  const tmp=document.createElement('canvas');
+  tmp.width=W;tmp.height=H;
+  const tCtx=tmp.getContext('2d');
+  tCtx.drawImage(bn,0,0,W,H);
+  const data=tCtx.getImageData(0,0,W,H);
+  const d=data.data;
+  for (let i=0;i<d.length;i+=4){
+    const luma=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    d[i+3]=luma<128?255:0;
+    d[i]=d[i+1]=d[i+2]=0;
+  }
+  tCtx.putImageData(data,0,0);
+  return tmp;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  APP STATE
+// ═══════════════════════════════════════════════════════════
+const state = {
+  srcImg:       null,   // HTMLImageElement
+  srcCanvas:    null,   // canvas con imagen fuente
+  silCanvas:    null,   // silueta BN
+  engCanvas:    null,   // grabado en grises
+  cutCanvas:    null,   // borde exterior
+  drawCanvas:   null,   // trazos manuales
+  material:     MATERIALS[0],
+  widthMm:      40,
+  heightMm:     null,
+  level:        'MEDIO',
+  drawMode:     'draw',
+  brushSize:    8,
+  history:      [],
+  histIdx:      -1,
+  previewMode:  'REALISTA',
+};
+
+// ═══════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PANTALLA 1 — FOTO + MATERIAL
+// ═══════════════════════════════════════════════════════════
+function initScreen1() {
+  // Color grid
+  const grid = document.getElementById('color-grid');
+  MATERIALS.forEach((m, i) => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (i===0?' selected':'');
+    sw.style.background = m.color;
+    sw.title = m.name;
+    sw.onclick = () => {
+      grid.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));
+      sw.classList.add('selected');
+      state.material = m;
+      document.getElementById('color-preview').style.background = m.color;
+      document.getElementById('color-name').textContent = m.name;
+      document.getElementById('color-type').textContent = m.type;
+    };
+    grid.appendChild(sw);
+  });
+  document.getElementById('color-preview').style.background = MATERIALS[0].color;
+
+  // Upload
+  const zone = document.getElementById('upload-zone');
+  const fileInput = document.getElementById('file-input');
+  zone.onclick = () => fileInput.click();
+  fileInput.onchange = e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => loadPhoto(ev.target.result);
+    reader.readAsDataURL(f);
+  };
+
+  // Medidas
+  const wInput = document.getElementById('input-width');
+  const hInput = document.getElementById('input-height');
+  wInput.oninput = () => {
+    state.widthMm = parseFloat(wInput.value) || 40;
+    if (state._ratio && wInput.value) {
+      const h = Math.round(state.widthMm * state._ratio * 10) / 10;
+      hInput.placeholder = h;
+      state.heightMm = h;
+    }
+  };
+  hInput.oninput = () => { state.heightMm = parseFloat(hInput.value) || null; };
+
+  // Next
+  document.getElementById('btn-step1-next').onclick = () => {
+    if (!state.srcImg) { toast('Sube una foto primero'); return; }
+    state.widthMm  = parseFloat(wInput.value)  || 40;
+    state.heightMm = parseFloat(hInput.value)  || (state._ratio ? Math.round(40*state._ratio*10)/10 : 40);
+    goToScreen('screen-design');
+    initScreen2();
+  };
+}
+
+function loadPhoto(dataUrl) {
+  const zone = document.getElementById('upload-zone');
+  const img = new Image();
+  img.onload = () => {
+    state.srcImg = img;
+    // Mostrar miniatura
+    zone.innerHTML = `<img src="${dataUrl}" alt="foto">`;
+
+    // Guardar canvas fuente
+    const sc = document.createElement('canvas');
+    sc.width = img.naturalWidth; sc.height = img.naturalHeight;
+    sc.getContext('2d').drawImage(img, 0, 0);
+    state.srcCanvas = sc;
+
+    // Calcular ratio y rellenar alto automático
+    const ratio = img.naturalHeight / img.naturalWidth;
+    state._ratio = ratio;
+    const wVal = parseFloat(document.getElementById('input-width').value) || 40;
+    const h = Math.round(wVal * ratio * 10) / 10;
+    document.getElementById('input-height').placeholder = h + ' (auto)';
+    document.getElementById('ratio-hint').textContent = `Ratio ${img.naturalWidth}×${img.naturalHeight}px → alto calculado automáticamente`;
+    state.heightMm = h;
+    toast('Foto cargada ✓');
+  };
+  img.src = dataUrl;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PANTALLA 2 — DISEÑAR
+// ═══════════════════════════════════════════════════════════
+function initScreen2() {
+  const src = state.srcCanvas;
+  if (!src) return;
+
+  const W = src.width, H = src.height;
+  const wrap = document.getElementById('canvas-wrap');
+  const cResult = document.getElementById('canvas-result');
+  const cDraw = document.getElementById('canvas-draw');
+
+  cResult.width = W; cResult.height = H;
+  cDraw.width = W; cDraw.height = H;
+  state.drawCanvas = cDraw;
+
+  // Extraer
+  buildAll(state.level);
+
+  // Tabs vista
+  document.querySelectorAll('#view-tabs .tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('#view-tabs .tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      drawResult(tab.dataset.view);
+    };
+  });
+
+  // Tabs intensidad
+  document.querySelectorAll('#intensity-tabs .tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('#intensity-tabs .tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      state.level = tab.dataset.level;
+      buildEngraving_state();
+      const activeView = document.querySelector('#view-tabs .tab.active')?.dataset.view || 'GRABADO';
+      drawResult(activeView);
+      toast('Intensidad: ' + tab.dataset.level);
+    };
+  });
+
+  // Herramientas
+  document.getElementById('tool-draw').onclick = () => {
+    state.drawMode = 'draw';
+    document.getElementById('tool-draw').className = 'btn btn-secondary';
+    document.getElementById('tool-erase').className = 'btn btn-ghost';
+  };
+  document.getElementById('tool-erase').onclick = () => {
+    state.drawMode = 'erase';
+    document.getElementById('tool-draw').className = 'btn btn-ghost';
+    document.getElementById('tool-erase').className = 'btn btn-secondary';
+  };
+  document.getElementById('tool-undo').onclick = () => undo();
+  document.getElementById('tool-reextract').onclick = () => {
+    buildAll(state.level);
+    toast('Re-extraído');
+  };
+
+  // Pincel
+  document.getElementById('slider-brush').oninput = e => {
+    state.brushSize = parseInt(e.target.value);
+    document.getElementById('lbl-brush').textContent = e.target.value;
+  };
+
+  // Dibujo táctil
+  cDraw.addEventListener('mousedown', e => startDraw(e));
+  cDraw.addEventListener('mousemove', e => moveDraw(e));
+  cDraw.addEventListener('mouseup', endDraw);
+  cDraw.addEventListener('mouseleave', endDraw);
+  cDraw.addEventListener('touchstart', e => startDraw(e), { passive: false });
+  cDraw.addEventListener('touchmove', e => moveDraw(e), { passive: false });
+  cDraw.addEventListener('touchend', endDraw);
+
+  // Next
+  document.getElementById('btn-design-next').onclick = () => {
+    goToScreen('screen-export');
+    initScreen3();
+  };
+
+  document.getElementById('btn-design-back').onclick = () => goToScreen('screen-foto');
+}
+
+function buildAll(level) {
+  const src = state.srcCanvas;
+  const W = src.width, H = src.height;
+  state.silCanvas = extractSilhouette(src, W, H);
+  state.cutCanvas = buildOuterEdge(state.silCanvas, W, H);
+  state.engCanvas = buildEngraving(src, W, H, level);
+  // Reset trazos
+  state.drawCanvas.getContext('2d').clearRect(0, 0, W, H);
+  state.history = [];
+  state.histIdx = -1;
+  pushHistory();
+  drawResult('GRABADO');
+  document.querySelectorAll('#view-tabs .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('#view-tabs .tab[data-view="GRABADO"]').classList.add('active');
+}
+
+function buildEngraving_state() {
+  const src = state.srcCanvas;
+  const W = src.width, H = src.height;
+  state.engCanvas = buildEngraving(src, W, H, state.level);
+}
+
+function drawResult(view) {
+  const cRes = document.getElementById('canvas-result');
+  const ctx = cRes.getContext('2d');
+  const W = cRes.width, H = cRes.height;
+  ctx.clearRect(0,0,W,H);
+
+  if (view === 'GRABADO') {
+    // Fondo negro + grabado blanco/gris recortado a silueta
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0,0,W,H);
+    if (state.engCanvas) ctx.drawImage(state.engCanvas, 0,0);
+    if (state.drawCanvas) ctx.drawImage(state.drawCanvas, 0,0);
+
+  } else if (view === 'CORTE') {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0,0,W,H);
+    if (state.cutCanvas) ctx.drawImage(state.cutCanvas, 0,0);
+    // Agujero si hay
+    ctx.strokeStyle = '#000'; ctx.lineWidth=2;
+
+  } else if (view === 'PREVIEW') {
+    // Color real: material + grabado en multiply
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0,0,W,H);
+    if (state.engCanvas && state.silCanvas) {
+      const tmp = document.createElement('canvas');
+      tmp.width=W; tmp.height=H;
+      const tCtx = tmp.getContext('2d');
+      // Fondo de material
+      tCtx.fillStyle = state.material.color;
+      tCtx.fillRect(0,0,W,H);
+      // Grabado en multiply
+      tCtx.globalCompositeOperation = 'multiply';
+      tCtx.drawImage(state.engCanvas,0,0);
+      if (state.drawCanvas) { tCtx.drawImage(state.drawCanvas,0,0); }
+      tCtx.globalCompositeOperation = 'source-over';
+      // Clipear a silueta
+      const mask = bnToAlpha(state.silCanvas, W, H);
+      tCtx.globalCompositeOperation = 'destination-in';
+      tCtx.drawImage(mask,0,0);
+      ctx.drawImage(tmp,0,0);
+    }
+  }
+}
+
+// Historial
+function pushHistory() {
+  if (!state.drawCanvas) return;
+  const W=state.drawCanvas.width, H=state.drawCanvas.height;
+  const data=state.drawCanvas.getContext('2d').getImageData(0,0,W,H);
+  state.history=state.history.slice(0,state.histIdx+1);
+  state.history.push(data);
+  if (state.history.length>20) state.history.shift();
+  state.histIdx=state.history.length-1;
+}
+function undo() {
+  if (state.histIdx<=0) return;
+  state.histIdx--;
+  state.drawCanvas.getContext('2d').putImageData(state.history[state.histIdx],0,0);
+  const v=document.querySelector('#view-tabs .tab.active')?.dataset.view||'GRABADO';
+  drawResult(v);
+}
+
+// Dibujo táctil
+let _drawing=false, _lastPt=null;
+function getCanvasPoint(e, canvas) {
+  const rect=canvas.getBoundingClientRect();
+  const touch=e.touches?.[0]??e;
+  return {
+    x:(touch.clientX-rect.left)*canvas.width/rect.width,
+    y:(touch.clientY-rect.top)*canvas.height/rect.height,
+  };
+}
+function startDraw(e) {
+  e.preventDefault();
+  _drawing=true;
+  _lastPt=getCanvasPoint(e,state.drawCanvas);
+}
+function moveDraw(e) {
+  if (!_drawing) return;
+  e.preventDefault();
+  const pt=getCanvasPoint(e,state.drawCanvas);
+  const ctx=state.drawCanvas.getContext('2d');
+  ctx.globalCompositeOperation=state.drawMode==='erase'?'destination-out':'source-over';
+  ctx.strokeStyle='#000'; ctx.lineWidth=state.brushSize;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(_lastPt.x,_lastPt.y); ctx.lineTo(pt.x,pt.y); ctx.stroke();
+  _lastPt=pt;
+  const v=document.querySelector('#view-tabs .tab.active')?.dataset.view||'GRABADO';
+  drawResult(v);
+}
+function endDraw() {
+  if (!_drawing) return;
+  _drawing=false;
+  pushHistory();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PANTALLA 3 — EXPORTAR
+// ═══════════════════════════════════════════════════════════
+function initScreen3() {
+  // Resumen
+  document.getElementById('sum-w').textContent = state.widthMm || '—';
+  document.getElementById('sum-h').textContent = state.heightMm || '—';
+  document.getElementById('sum-level').textContent = state.level;
+
+  // Preview
+  renderPreview('REALISTA');
+
+  // Export
+  document.getElementById('btn-dl-corte').onclick = () => exportCanvas(state.cutCanvas, 'CORTE');
+  document.getElementById('btn-dl-grabado').onclick = () => exportCanvas(getFinalEngCanvas(), 'GRABADO');
+  document.getElementById('btn-dl-preview').onclick = () => exportCanvas(document.getElementById('canvas-preview'), 'PREVIEW');
+  document.getElementById('btn-nuevo').onclick = () => {
+    location.reload();
+  };
+  document.getElementById('btn-export-back').onclick = () => goToScreen('screen-design');
+}
+
+window.app = {
+  setPreviewMode(mode) {
+    ['real','corte','grab'].forEach(k => {
+      document.getElementById('prev-tab-'+k)?.classList.remove('active');
+    });
+    const map = { REALISTA:'real', CORTE:'corte', GRABADO:'grab' };
+    document.getElementById('prev-tab-'+map[mode])?.classList.add('active');
+    renderPreview(mode);
+  }
+};
+
+function getFinalEngCanvas() {
+  // Combina engCanvas + trazos manuales
+  const W=state.engCanvas.width, H=state.engCanvas.height;
+  const c=document.createElement('canvas');
+  c.width=W;c.height=H;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  ctx.drawImage(state.engCanvas,0,0);
+  if (state.drawCanvas) ctx.drawImage(state.drawCanvas,0,0);
+  return c;
+}
+
+function renderPreview(mode) {
+  const wrap = document.getElementById('preview-canvas-wrap');
+  const c = document.getElementById('canvas-preview');
+  if (!state.silCanvas) return;
+
+  const W = state.silCanvas.width, H = state.silCanvas.height;
+  c.width=W; c.height=H;
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+
+  if (mode==='REALISTA') {
+    // Fondo claro + material + grabado
+    ctx.fillStyle = '#f0f0f0';
+    ctx.fillRect(0,0,W,H);
+    const tmp=document.createElement('canvas');
+    tmp.width=W;tmp.height=H;
+    const tCtx=tmp.getContext('2d');
+    tCtx.fillStyle=state.material.color;
+    tCtx.fillRect(0,0,W,H);
+    const eng=getFinalEngCanvas();
+    tCtx.globalCompositeOperation='multiply';
+    tCtx.drawImage(eng,0,0);
+    tCtx.globalCompositeOperation='source-over';
+    const mask=bnToAlpha(state.silCanvas,W,H);
+    tCtx.globalCompositeOperation='destination-in';
+    tCtx.drawImage(mask,0,0);
+    // Sombra
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.3)';ctx.shadowBlur=16;ctx.shadowOffsetY=4;
+    ctx.drawImage(tmp,0,0);
+    ctx.restore();
+  } else if (mode==='CORTE') {
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    if (state.cutCanvas) ctx.drawImage(state.cutCanvas,0,0);
+  } else if (mode==='GRABADO') {
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    ctx.drawImage(getFinalEngCanvas(),0,0);
+  }
+
+  state.previewMode = mode;
+}
+
+function exportCanvas(canvas, name) {
+  if (!canvas) { toast('No hay datos para exportar'); return; }
+  const a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');
+  a.download=`tac-joyas_${name}.png`;
+  a.click();
+  toast(`Descargando ${name}...`);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NAVEGACIÓN
+// ═══════════════════════════════════════════════════════════
+function goToScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── INIT ──
+initScreen1();
+</script>
 </body>
 </html>
