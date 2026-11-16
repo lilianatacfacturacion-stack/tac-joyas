@@ -1,37 +1,14 @@
-const CACHE = 'tac-joyas-v13';
-const ASSETS = [
-  './',
-  './index.html',
-  './css/base.css',
-  './css/components.css',
-  './css/screens.css',
-  './js/app.js',
-  './js/models/Project.js',
-  './js/models/Material.js',
-  './js/models/Hardware.js',
-  './js/engines/DesignEngine.js',
-  './js/engines/MaterialEngine.js',
-  './js/engines/PreviewEngine.js',
-  './js/engines/LaserEngine.js',
-  './js/detection/DetectionProvider.js',
-  './js/detection/ManualDetection.js',
-  './js/storage/Storage.js',
-  './js/screens/HomeScreen.js',
-  './js/screens/PhotoScreen.js',
-  './js/screens/DetectScreen.js',
-  './js/screens/MaterialScreen.js',
-  './js/screens/DesignScreen.js',
-  './js/screens/HardwareScreen.js',
-  './js/screens/ResultScreen.js',
-];
+const CACHE = 'tac-joyas-v14';
 
-self.addEventListener('install', e => {
+self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then(c => c.addAll(["./", "./index.html"]))
+      .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener('activate', e => {
+self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
@@ -39,8 +16,11 @@ self.addEventListener('activate', e => {
   );
 });
 
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
-  );
+self.addEventListener("fetch", e => {
+  if (e.request.url.includes("index.html") || e.request.url.endsWith("/")) {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  } else {
+    e.respondWith(fetch(e.request));
+  }
 });
+
