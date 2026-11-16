@@ -2,370 +2,718 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#0d0d1a">
-<title>✦ TAC JOYAS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#f7f3ee">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>TAC JOYAS</title>
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+/* ═══════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════ */
+:root {
+  --cream:    #f7f3ee;
+  --warm:     #ede8e0;
+  --sand:     #d9cfc4;
+  --blush:    #c8a090;
+  --blush2:   #e8c4b4;
+  --blush-bg: #faf0eb;
+  --sage:     #7a9e84;
+  --sage-bg:  #eaf2ec;
+  --clay:     #9c6b50;
+  --clay-bg:  #f5ece6;
+  --text:     #2c2420;
+  --text2:    #6b5a52;
+  --muted:    #a89080;
+  --line:     #e8e0d8;
+  --r:        16px;
+  --r-sm:     10px;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans:  'Inter', system-ui, sans-serif;
+}
 
-  :root {
-    --bg: #faf8f5;
-    --surface: #ffffff;
-    --surface2: #f5f0ea;
-    --rose: #d4869a;
-    --rose2: #e8a8b8;
-    --rose-light: #fce8ed;
-    --sage: #8aaa8e;
-    --sage-light: #e8f0e9;
-    --gold: #c8956a;
-    --gold-light: #faf0e6;
-    --text: #3d3530;
-    --text2: #6b5a52;
-    --muted: #a89890;
-    --border: #e8ddd6;
-    --border2: #d4c8be;
-    --radius: 14px;
-    --shadow: 0 2px 12px rgba(61,53,48,0.08);
-    --shadow-hover: 0 4px 20px rgba(61,53,48,0.14);
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { background: var(--bg); color: var(--text); font-family: 'Nunito', system-ui, sans-serif; min-height: 100dvh; overflow-x: hidden; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+body { background: var(--cream); color: var(--text); font-family: var(--font-sans); min-height: 100dvh; overflow-x: hidden; font-size: 15px; }
 
-  /* ── HEADER ── */
-  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: var(--shadow); }
-  .header h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.4rem; font-weight: 700; letter-spacing: 3px; color: var(--rose); background: linear-gradient(135deg, var(--rose) 0%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .header .step-info { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.5px; background: var(--surface2); padding: 4px 10px; border-radius: 20px; }
+/* ═══════════════════════════════════════
+   SCREENS
+═══════════════════════════════════════ */
+.screen { display: none; min-height: 100dvh; flex-direction: column; }
+.screen.active { display: flex; }
 
-  /* ── STEPS BAR ── */
-  .steps { display: flex; gap: 6px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .step { flex: 1; height: 5px; border-radius: 3px; background: var(--border); transition: background .4s ease; }
-  .step.done { background: linear-gradient(90deg, var(--rose), var(--gold)); }
-  .step.active { background: var(--rose2); }
+/* ═══════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════ */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(247,243,238,0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px;
+}
+.brand {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+.brand span { color: var(--blush); }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.pill {
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 0.05em;
+  color: var(--muted); background: var(--warm);
+  padding: 5px 12px; border-radius: 20px;
+}
 
-  /* ── BODY ── */
-  .body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+/* ═══════════════════════════════════════
+   PROGRESS
+═══════════════════════════════════════ */
+.progress-wrap { background: var(--cream); padding: 14px 20px 0; }
+.progress-steps { display: flex; gap: 0; }
+.pstep {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  position: relative;
+}
+.pstep:not(:last-child)::after {
+  content: ''; position: absolute; top: 11px; left: 50%; width: 100%; height: 1px;
+  background: var(--line); z-index: 0;
+}
+.pstep-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--warm); border: 2px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.6rem; font-weight: 600; color: var(--muted);
+  position: relative; z-index: 1; transition: all .3s;
+}
+.pstep.done .pstep-dot { background: var(--blush); border-color: var(--blush); color: #fff; }
+.pstep.active .pstep-dot { background: #fff; border-color: var(--blush); color: var(--blush); box-shadow: 0 0 0 4px var(--blush-bg); }
+.pstep-label { font-size: 0.65rem; font-weight: 500; color: var(--muted); letter-spacing: 0.04em; }
+.pstep.active .pstep-label { color: var(--blush); font-weight: 600; }
+.pstep.done .pstep-label { color: var(--text2); }
 
-  /* ── CARDS ── */
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
-  .card-title { font-size: 0.68rem; font-weight: 800; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; }
+/* ═══════════════════════════════════════
+   SCROLL BODY
+═══════════════════════════════════════ */
+.scroll-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
 
-  /* ── BUTTONS ── */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 13px 18px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all .2s ease; width: 100%; font-family: inherit; }
-  .btn-primary { background: linear-gradient(135deg, var(--rose) 0%, var(--gold) 100%); color: #fff; box-shadow: 0 4px 14px rgba(212,134,154,0.4); }
-  .btn-primary:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(212,134,154,0.3); }
-  .btn-secondary { background: var(--surface2); color: var(--text2); border: 1.5px solid var(--border2); }
-  .btn-secondary:active { background: var(--rose-light); border-color: var(--rose2); }
-  .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
-  .btn-ghost:active { background: var(--surface2); }
-  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .btn-export { padding: 20px 14px; font-size: 0.95rem; border-radius: 12px; line-height: 1.4; }
-  .btn-export-corte { background: linear-gradient(135deg, #e8c5cf, #d4a0ae); color: #3d3530; box-shadow: 0 4px 14px rgba(212,160,174,0.35); border: none; }
-  .btn-export-grabado { background: linear-gradient(135deg, #c8d8b8, #a8c098); color: #3d3530; box-shadow: 0 4px 14px rgba(138,170,142,0.35); border: none; }
-  .btn-export-corte:active, .btn-export-grabado:active { transform: scale(0.97); }
+/* ═══════════════════════════════════════
+   SECTION TITLES
+═══════════════════════════════════════ */
+.section-label {
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+}
 
-  /* ── TABS ── */
-  .tabs { display: flex; gap: 5px; }
-  .tab { flex: 1; padding: 10px 4px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; color: var(--muted); font-size: 0.78rem; font-weight: 700; cursor: pointer; text-align: center; transition: all .2s; font-family: inherit; }
-  .tab.active { background: linear-gradient(135deg, var(--rose-light), var(--gold-light)); color: var(--text); border-color: var(--rose2); }
+/* ═══════════════════════════════════════
+   CARDS
+═══════════════════════════════════════ */
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 20px;
+}
+.card + .card { margin-top: 0; }
 
-  /* ── UPLOAD ZONE ── */
-  .upload-zone { border: 2px dashed var(--border2); border-radius: var(--radius); padding: 36px 16px; text-align: center; cursor: pointer; transition: all .25s; display: flex; flex-direction: column; align-items: center; gap: 10px; background: linear-gradient(135deg, #fdfcfb, var(--rose-light)); }
-  .upload-zone:active, .upload-zone.drag { border-color: var(--rose); background: var(--rose-light); }
-  .upload-zone .icon { font-size: 2.8rem; }
-  .upload-zone .label { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
-  .upload-zone img { max-width: 100%; max-height: 200px; border-radius: 10px; object-fit: contain; box-shadow: var(--shadow); }
-  #file-input { display: none; }
+/* ═══════════════════════════════════════
+   UPLOAD ZONE
+═══════════════════════════════════════ */
+.upload-zone {
+  border: 1.5px dashed var(--sand);
+  border-radius: var(--r-sm);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: var(--warm);
+  transition: all .2s;
+}
+.upload-zone:active { border-color: var(--blush); background: var(--blush-bg); }
+.upload-icon { font-size: 2rem; opacity: 0.6; }
+.upload-title { font-family: var(--font-serif); font-size: 1.1rem; color: var(--text2); }
+.upload-sub { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+.upload-zone img { max-width: 100%; max-height: 220px; border-radius: 10px; object-fit: contain; }
+#file-input { display: none; }
 
-  /* ── CANVAS ── */
-  #canvas-wrap { position: relative; background: var(--surface2); border-radius: var(--radius); overflow: hidden; touch-action: none; border: 1px solid var(--border); }
-  #canvas-result { display: block; width: 100%; height: auto; }
-  #canvas-draw { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+/* ═══════════════════════════════════════
+   MATERIAL SELECTOR — carrusel horizontal
+═══════════════════════════════════════ */
+.material-scroll {
+  display: flex; gap: 10px;
+  overflow-x: auto; padding: 2px 0 8px;
+  scrollbar-width: none;
+}
+.material-scroll::-webkit-scrollbar { display: none; }
+.mat-chip {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  cursor: pointer;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  min-width: 72px;
+  transition: all .2s;
+  background: var(--warm);
+}
+.mat-chip.selected { border-color: var(--blush); background: var(--blush-bg); }
+.mat-dot {
+  width: 36px; height: 36px; border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.mat-name { font-size: 0.65rem; font-weight: 500; color: var(--text2); text-align: center; line-height: 1.3; }
+.mat-chip.selected .mat-name { color: var(--clay); font-weight: 600; }
 
-  /* ── SLIDER ── */
-  .slider-row { display: flex; align-items: center; gap: 10px; }
-  .slider-row label { font-size: 0.75rem; color: var(--muted); white-space: nowrap; min-width: 70px; font-weight: 700; }
-  .slider-row input[type=range] { flex: 1; accent-color: var(--rose); }
-  .slider-row .val { font-size: 0.75rem; color: var(--rose); min-width: 28px; text-align: right; font-weight: 700; }
+/* ═══════════════════════════════════════
+   MEDIDAS
+═══════════════════════════════════════ */
+.dim-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.dim-field { display: flex; flex-direction: column; gap: 6px; }
+.dim-field label { font-size: 0.7rem; font-weight: 600; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.dim-input {
+  background: var(--warm); border: 1.5px solid var(--line);
+  border-radius: var(--r-sm); color: var(--text);
+  padding: 12px 14px; font-size: 1rem; width: 100%;
+  font-family: var(--font-sans); font-weight: 500;
+  transition: border-color .2s;
+}
+.dim-input:focus { outline: none; border-color: var(--blush); background: var(--blush-bg); }
+.dim-hint { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
 
-  /* ── MATERIAL COLOR GRID ── */
-  .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-  .color-swatch { width: 100%; aspect-ratio: 1; border-radius: 10px; cursor: pointer; border: 2.5px solid transparent; transition: all .2s; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-  .color-swatch.selected { border-color: var(--rose); transform: scale(1.12); box-shadow: 0 3px 10px rgba(212,134,154,0.4); }
+/* ═══════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════ */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 15px 20px; border: none; border-radius: var(--r-sm);
+  font-family: var(--font-sans); font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: all .2s; letter-spacing: 0.02em;
+}
+.btn-cta {
+  background: var(--text); color: var(--cream);
+  box-shadow: 0 4px 16px rgba(44,36,32,0.2);
+}
+.btn-cta:active { transform: scale(0.98); }
+.btn-ghost {
+  background: transparent; color: var(--text2);
+  border: 1.5px solid var(--line);
+}
+.btn-ghost:active { background: var(--warm); }
+.btn-back {
+  background: transparent; color: var(--muted);
+  border: none; width: auto; padding: 8px 0;
+  font-size: 0.85rem;
+}
 
-  /* ── DRAW TOOLBAR ── */
-  .draw-tools { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
-  .draw-tools .btn { min-width: 72px; width: auto; padding: 8px 12px; font-size: 0.8rem; }
+/* ═══════════════════════════════════════
+   BOTTOM BAR
+═══════════════════════════════════════ */
+.bottombar {
+  padding: 14px 20px;
+  background: rgba(247,243,238,0.98);
+  border-top: 1px solid var(--line);
+}
 
-  /* ── TOAST ── */
-  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: linear-gradient(135deg, var(--rose), var(--gold)); color: #fff; padding: 11px 22px; border-radius: 24px; font-weight: 700; font-size: 0.85rem; transition: transform .3s cubic-bezier(.34,1.56,.64,1); z-index: 999; pointer-events: none; box-shadow: 0 4px 16px rgba(212,134,154,0.4); }
-  #toast.show { transform: translateX(-50%) translateY(0); }
+/* ═══════════════════════════════════════
+   CANVAS (pantalla diseño)
+═══════════════════════════════════════ */
+#canvas-wrap {
+  position: relative; overflow: hidden;
+  border-radius: var(--r-sm); background: var(--warm);
+  border: 1px solid var(--line);
+  touch-action: none;
+}
+#canvas-result { display: block; width: 100%; height: auto; }
+#canvas-draw {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  touch-action: none; cursor: crosshair;
+}
 
-  /* ── FOOTER NAV ── */
-  .footer { padding: 14px 18px; background: var(--surface); border-top: 1px solid var(--border); }
+/* ═══════════════════════════════════════
+   VIEW TABS
+═══════════════════════════════════════ */
+.tab-row { display: flex; gap: 6px; }
+.vtab {
+  flex: 1; padding: 9px 4px; text-align: center;
+  font-size: 0.72rem; font-weight: 600; cursor: pointer;
+  border-radius: 8px; border: 1.5px solid var(--line);
+  background: var(--warm); color: var(--muted);
+  transition: all .2s; letter-spacing: 0.02em;
+}
+.vtab.active { background: var(--text); color: var(--cream); border-color: var(--text); }
 
-  /* ── SCREENS ── */
-  .screen { display: none; flex-direction: column; min-height: 100dvh; }
-  .screen.active { display: flex; }
+/* ═══════════════════════════════════════
+   INTENSITY SELECTOR
+═══════════════════════════════════════ */
+.intensity-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.itab {
+  padding: 12px 6px; text-align: center;
+  border-radius: var(--r-sm); border: 1.5px solid var(--line);
+  background: var(--warm); cursor: pointer; transition: all .2s;
+}
+.itab-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+.itab-name { font-size: 0.7rem; font-weight: 600; color: var(--muted); display: block; }
+.itab.active { border-color: var(--clay); background: var(--clay-bg); }
+.itab.active .itab-name { color: var(--clay); }
 
-  /* ── EXPORT PREVIEW ── */
-  #preview-canvas-wrap { background: var(--surface2); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
-  #preview-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+/* ═══════════════════════════════════════
+   DRAW TOOLS
+═══════════════════════════════════════ */
+.tool-row { display: flex; gap: 6px; overflow-x: auto; }
+.toolbtn {
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line);
+  background: var(--warm); cursor: pointer; transition: all .2s;
+  font-family: var(--font-sans); font-size: 0;
+}
+.toolbtn-icon { font-size: 1.2rem; }
+.toolbtn-label { font-size: 0.65rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.toolbtn.active { background: var(--blush-bg); border-color: var(--blush); }
+.toolbtn.active .toolbtn-label { color: var(--blush); }
+.brush-row { display: flex; align-items: center; gap: 10px; }
+.brush-row label { font-size: 0.7rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.brush-row input[type=range] { flex: 1; accent-color: var(--blush); }
+.brush-row .bval { font-size: 0.75rem; font-weight: 600; color: var(--blush); min-width: 24px; text-align: right; }
 
-  /* ── MEDIDAS ── */
-  .dim-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .dim-field { display: flex; flex-direction: column; gap: 5px; }
-  .dim-field label { font-size: 0.75rem; color: var(--muted); font-weight: 700; letter-spacing: 0.5px; }
-  .dim-field input { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); padding: 11px 13px; font-size: 1rem; width: 100%; font-family: inherit; }
-  .dim-field input:focus { outline: none; border-color: var(--rose2); background: var(--rose-light); }
+/* ═══════════════════════════════════════
+   EXPORT BUTTONS
+═══════════════════════════════════════ */
+.export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.export-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 22px 12px; border-radius: 14px; border: none;
+  cursor: pointer; transition: all .2s; font-family: var(--font-sans);
+}
+.export-btn:active { transform: scale(0.97); }
+.export-btn-cut { background: var(--warm); border: 1.5px solid var(--sand); }
+.export-btn-eng { background: var(--sage-bg); border: 1.5px solid #c0d8c4; }
+.export-icon { font-size: 1.8rem; }
+.export-name { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.export-desc { font-size: 0.7rem; color: var(--muted); text-align: center; line-height: 1.4; }
 
-  /* ── STAT BOXES ── */
-  .stat-box { background: var(--surface2); border-radius: 12px; padding: 14px 10px; border: 1px solid var(--border); }
-  .stat-val { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-weight: 700; color: var(--rose); line-height: 1; }
-  .stat-label { font-size: 0.65rem; color: var(--muted); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
+/* ═══════════════════════════════════════
+   PREVIEW CANVAS
+═══════════════════════════════════════ */
+#preview-canvas-wrap {
+  border-radius: var(--r-sm); overflow: hidden;
+  background: var(--warm); border: 1px solid var(--line);
+}
+#preview-canvas-wrap canvas { display: block; width: 100%; height: auto; }
+
+/* ═══════════════════════════════════════
+   STATS ROW (export)
+═══════════════════════════════════════ */
+.stats-row { display: flex; gap: 10px; }
+.stat {
+  flex: 1; background: var(--warm); border-radius: var(--r-sm);
+  padding: 14px 10px; text-align: center;
+}
+.stat-n { font-family: var(--font-serif); font-size: 1.5rem; color: var(--text); line-height: 1; }
+.stat-u { font-size: 0.6rem; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 3px; }
+
+/* ═══════════════════════════════════════
+   GALERÍA
+═══════════════════════════════════════ */
+#screen-gallery .hero {
+  padding: 32px 20px 20px;
+  text-align: center;
+}
+#screen-gallery .hero-title {
+  font-family: var(--font-serif); font-size: 1.9rem;
+  color: var(--text); margin-bottom: 6px;
+}
+#screen-gallery .hero-sub {
+  font-size: 0.85rem; color: var(--muted); line-height: 1.5;
+}
+.gallery-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  padding: 0;
+}
+.gallery-item {
+  position: relative; aspect-ratio: 1; overflow: hidden;
+  background: var(--warm); cursor: pointer;
+}
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
+.gallery-item:active img { transform: scale(1.04); }
+.gallery-item .g-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(44,36,32,0.6) 0%, transparent 50%);
+  opacity: 0; transition: opacity .2s;
+  display: flex; align-items: flex-end; padding: 10px;
+}
+.gallery-item:active .g-overlay { opacity: 1; }
+.gallery-item .g-name { font-size: 0.75rem; font-weight: 600; color: #fff; }
+.gallery-empty {
+  grid-column: 1/-1; padding: 48px 20px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.gallery-empty-icon { font-size: 2.5rem; opacity: 0.3; }
+.gallery-empty-text { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+/* ═══════════════════════════════════════
+   NAV BOTTOM (galería y home)
+═══════════════════════════════════════ */
+.nav-bottom {
+  display: flex; background: #fff;
+  border-top: 1px solid var(--line);
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  gap: 3px; padding: 10px 4px; cursor: pointer;
+  border: none; background: transparent; font-family: var(--font-sans);
+  transition: color .2s;
+}
+.nav-icon { font-size: 1.3rem; }
+.nav-label { font-size: 0.62rem; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; }
+.nav-item.active .nav-label { color: var(--blush); }
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+#toast {
+  position: fixed; bottom: 90px; left: 50%;
+  transform: translateX(-50%) translateY(30px);
+  background: var(--text); color: var(--cream);
+  padding: 10px 22px; border-radius: 24px;
+  font-size: 0.82rem; font-weight: 500;
+  opacity: 0; transition: all .3s cubic-bezier(.34,1.56,.64,1);
+  z-index: 999; pointer-events: none; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ═══════════════════════════════════════
+   DIVIDER
+═══════════════════════════════════════ */
+.divider { height: 1px; background: var(--line); margin: 4px 0; }
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     PANTALLA 1 — FOTO + MATERIAL
-═══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════
+     PANTALLA 1 — FOTO
+══════════════════════════════════════ -->
 <div class="screen active" id="screen-foto">
-  <div class="header">
-    <h1>✦ TAC JOYAS</h1>
-    <span class="step-info">Paso 1 de 3</span>
-  </div>
-  <div class="steps">
-    <div class="step active"></div>
-    <div class="step"></div>
-    <div class="step"></div>
+  <div class="topbar">
+    <div class="brand">TAC <span>✦</span> JOYAS</div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost" style="width:auto;padding:7px 14px;font-size:0.8rem;" onclick="goScreen('screen-gallery')">Galería</button>
+    </div>
   </div>
 
-  <div class="body" style="flex:1; overflow-y:auto;">
+  <div class="progress-wrap">
+    <div class="progress-steps">
+      <div class="pstep active" id="ps1">
+        <div class="pstep-dot">1</div>
+        <div class="pstep-label">Foto</div>
+      </div>
+      <div class="pstep" id="ps2">
+        <div class="pstep-dot">2</div>
+        <div class="pstep-label">Diseño</div>
+      </div>
+      <div class="pstep" id="ps3">
+        <div class="pstep-dot">3</div>
+        <div class="pstep-label">Exportar</div>
+      </div>
+    </div>
+    <div style="height:16px;"></div>
+  </div>
 
-    <div class="card">
-      <div class="card-title">📷 Foto de la pieza</div>
+  <div class="scroll-body">
+
+    <!-- UPLOAD -->
+    <div>
+      <div class="section-label">Fotografía de la pieza</div>
       <div class="upload-zone" id="upload-zone">
-        <span class="icon">📷</span>
-        <span class="label">Toca para subir foto o tomar una</span>
+        <div class="upload-icon">📷</div>
+        <div class="upload-title">Añadir foto</div>
+        <div class="upload-sub">Toca para seleccionar o fotografiar<br>tu pieza artesanal</div>
       </div>
       <input type="file" id="file-input" accept="image/*" capture="environment">
     </div>
 
-    <div class="card">
-      <div class="card-title">🎨 Material y color</div>
-      <div class="color-grid" id="color-grid">
-        <!-- generado por JS -->
-      </div>
-      <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
-        <div id="color-preview" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);"></div>
+    <!-- MATERIAL -->
+    <div>
+      <div class="section-label">Material</div>
+      <div class="material-scroll" id="material-scroll"></div>
+      <div id="mat-selected-info" style="margin-top:8px; display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--warm); border-radius:var(--r-sm);">
+        <div id="mat-dot-preview" style="width:28px;height:28px;border-radius:50%;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.12);"></div>
         <div>
-          <div id="color-name" style="font-weight:700; font-size:0.9rem;">Cuero marrón</div>
-          <div id="color-type" style="font-size:0.75rem; color:var(--muted);">Natural</div>
+          <div id="mat-name-lbl" style="font-size:0.9rem;font-weight:600;color:var(--text);">Cuero marrón</div>
+          <div id="mat-type-lbl" style="font-size:0.72rem;color:var(--muted);">Natural · tonos cálidos</div>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">📐 Medidas (mm)</div>
+    <!-- MEDIDAS -->
+    <div>
+      <div class="section-label">Dimensiones</div>
       <div class="dim-row">
         <div class="dim-field">
-          <label>Ancho</label>
-          <input type="number" id="input-width" placeholder="40" min="5" max="200" step="0.5">
+          <label>Ancho (mm)</label>
+          <input class="dim-input" type="number" id="input-width" placeholder="40" min="5" max="200" step="0.5">
         </div>
         <div class="dim-field">
-          <label>Alto</label>
-          <input type="number" id="input-height" placeholder="auto" min="5" max="200" step="0.5">
+          <label>Alto (mm)</label>
+          <input class="dim-input" type="number" id="input-height" placeholder="auto" min="5" max="200" step="0.5">
         </div>
       </div>
-      <div style="margin-top:8px; font-size:0.75rem; color:var(--muted);" id="ratio-hint">Sube una foto para calcular el alto automáticamente</div>
+      <div class="dim-hint" id="ratio-hint" style="margin-top:8px;">El alto se calcula automáticamente al subir la foto</div>
     </div>
 
   </div>
 
-  <div class="footer">
-    <button class="btn btn-primary" id="btn-step1-next">Continuar → Diseñar</button>
+  <div class="bottombar">
+    <button class="btn btn-cta" id="btn-step1-next">Continuar al diseño →</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     PANTALLA 2 — DISEÑAR / AJUSTAR
-═══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════
+     PANTALLA 2 — DISEÑAR
+══════════════════════════════════════ -->
 <div class="screen" id="screen-design">
-  <div class="header">
-    <button class="btn btn-ghost" id="btn-design-back" style="width:auto;padding:6px 12px;">← Volver</button>
-    <h1>✦ DISEÑAR</h1>
-    <span class="step-info">Paso 2 de 3</span>
-  </div>
-  <div class="steps">
-    <div class="step done"></div>
-    <div class="step active"></div>
-    <div class="step"></div>
+  <div class="topbar">
+    <button class="btn btn-back" id="btn-design-back">← Volver</button>
+    <div class="brand">TAC <span>✦</span> JOYAS</div>
+    <div class="pill">Paso 2</div>
   </div>
 
-  <div class="body" style="flex:1; overflow-y:auto; padding:0;">
+  <div class="progress-wrap">
+    <div class="progress-steps">
+      <div class="pstep done"><div class="pstep-dot">✓</div><div class="pstep-label">Foto</div></div>
+      <div class="pstep active"><div class="pstep-dot">2</div><div class="pstep-label">Diseño</div></div>
+      <div class="pstep"><div class="pstep-dot">3</div><div class="pstep-label">Exportar</div></div>
+    </div>
+    <div style="height:16px;"></div>
+  </div>
 
-    <!-- Vista del canvas -->
+  <div class="scroll-body" style="padding:0; gap:0;">
+
+    <!-- CANVAS -->
     <div id="canvas-wrap">
       <canvas id="canvas-result"></canvas>
       <canvas id="canvas-draw"></canvas>
     </div>
 
-    <!-- Tabs de vista -->
-    <div style="padding:10px 12px 0;">
-      <div class="tabs" id="view-tabs">
-        <div class="tab active" data-view="GRABADO">Grabado</div>
-        <div class="tab" data-view="CORTE">Silueta</div>
-        <div class="tab" data-view="PREVIEW">Color real</div>
+    <!-- VISTAS -->
+    <div style="padding:14px 16px 0;">
+      <div class="tab-row" id="view-tabs">
+        <div class="vtab active" data-view="GRABADO">Grabado</div>
+        <div class="vtab" data-view="CORTE">Silueta</div>
+        <div class="vtab" data-view="PREVIEW">Color real</div>
       </div>
     </div>
 
-    <!-- Intensidad -->
-    <div style="padding:10px 12px 0;">
-      <div class="card-title" style="margin-bottom:8px;">Intensidad del grabado</div>
-      <div class="tabs" id="intensity-tabs">
-        <div class="tab" data-level="SUAVE">🪶 Suave</div>
-        <div class="tab active" data-level="MEDIO">✦ Medio</div>
-        <div class="tab" data-level="FUERTE">🔥 Fuerte</div>
+    <!-- INTENSIDAD -->
+    <div style="padding:14px 16px 0;">
+      <div class="section-label">Intensidad del grabado</div>
+      <div class="intensity-row" id="intensity-tabs">
+        <div class="itab" data-level="SUAVE">
+          <span class="itab-icon">🪶</span>
+          <span class="itab-name">Suave</span>
+        </div>
+        <div class="itab active" data-level="MEDIO">
+          <span class="itab-icon">◈</span>
+          <span class="itab-name">Medio</span>
+        </div>
+        <div class="itab" data-level="FUERTE">
+          <span class="itab-icon">⬛</span>
+          <span class="itab-name">Fuerte</span>
+        </div>
       </div>
     </div>
 
-    <!-- Herramientas de dibujo -->
-    <div style="padding:10px 12px 0;">
-      <div class="card-title" style="margin-bottom:8px;">Retocar manualmente</div>
-      <div class="draw-tools">
-        <button class="btn btn-secondary" id="tool-draw">✏️ Dibujar</button>
-        <button class="btn btn-ghost" id="tool-erase">🧹 Borrar</button>
-        <button class="btn btn-ghost" id="tool-undo">↩ Deshacer</button>
-        <button class="btn btn-ghost" id="tool-reextract">↺ Reextraer</button>
+    <!-- HERRAMIENTAS -->
+    <div style="padding:14px 16px 0;">
+      <div class="section-label">Retocar a mano</div>
+      <div class="tool-row">
+        <button class="toolbtn active" id="tool-draw">
+          <span class="toolbtn-icon">✏️</span>
+          <span class="toolbtn-label">Dibujar</span>
+        </button>
+        <button class="toolbtn" id="tool-erase">
+          <span class="toolbtn-icon">🧹</span>
+          <span class="toolbtn-label">Borrar</span>
+        </button>
+        <button class="toolbtn" id="tool-undo">
+          <span class="toolbtn-icon">↩</span>
+          <span class="toolbtn-label">Deshacer</span>
+        </button>
+        <button class="toolbtn" id="tool-reextract">
+          <span class="toolbtn-icon">↺</span>
+          <span class="toolbtn-label">Reextraer</span>
+        </button>
       </div>
-      <div class="slider-row" style="margin-top:10px;">
+      <div class="brush-row" style="margin-top:10px;">
         <label>Pincel</label>
         <input type="range" id="slider-brush" min="2" max="40" value="8">
-        <span class="val" id="lbl-brush">8</span>
+        <span class="bval" id="lbl-brush">8</span>
       </div>
     </div>
 
-    <div style="padding:10px 12px 16px;"></div>
+    <div style="height:20px;"></div>
   </div>
 
-  <div class="footer">
-    <button class="btn btn-primary" id="btn-design-next">Continuar → Exportar</button>
+  <div class="bottombar">
+    <button class="btn btn-cta" id="btn-design-next">Continuar a exportar →</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- ══════════════════════════════════════
      PANTALLA 3 — EXPORTAR
-═══════════════════════════════════════════ -->
+══════════════════════════════════════ -->
 <div class="screen" id="screen-export">
-  <div class="header">
-    <button class="btn btn-ghost" id="btn-export-back" style="width:auto;padding:6px 12px;">← Volver</button>
-    <h1>✦ EXPORTAR</h1>
-    <span class="step-info">Paso 3 de 3</span>
-  </div>
-  <div class="steps">
-    <div class="step done"></div>
-    <div class="step done"></div>
-    <div class="step active"></div>
+  <div class="topbar">
+    <button class="btn btn-back" id="btn-export-back">← Volver</button>
+    <div class="brand">TAC <span>✦</span> JOYAS</div>
+    <div class="pill">Paso 3</div>
   </div>
 
-  <div class="body" style="flex:1; overflow-y:auto;">
+  <div class="scroll-body">
 
-    <!-- Preview resultado -->
-    <div class="card">
-      <div class="card-title">Vista previa — resultado final</div>
+    <!-- PREVIEW -->
+    <div>
+      <div class="section-label">Vista previa del resultado</div>
       <div id="preview-canvas-wrap">
         <canvas id="canvas-preview"></canvas>
       </div>
-      <div style="margin-top:10px; display:flex; gap:8px;">
-        <div class="tab active" data-prev="REALISTA" id="prev-tab-real" onclick="app.setPreviewMode('REALISTA')" style="cursor:pointer;">Color real</div>
-        <div class="tab" data-prev="CORTE" id="prev-tab-corte" onclick="app.setPreviewMode('CORTE')" style="cursor:pointer;">Solo corte</div>
-        <div class="tab" data-prev="GRABADO" id="prev-tab-grab" onclick="app.setPreviewMode('GRABADO')" style="cursor:pointer;">Solo grabado</div>
+      <div class="tab-row" style="margin-top:8px;" id="prev-tabs">
+        <div class="vtab active" onclick="app.setPreviewMode('REALISTA')" id="pvt-real">Color real</div>
+        <div class="vtab" onclick="app.setPreviewMode('CORTE')" id="pvt-cut">Solo corte</div>
+        <div class="vtab" onclick="app.setPreviewMode('GRABADO')" id="pvt-eng">Solo grabado</div>
       </div>
     </div>
 
-    <!-- Medidas finales -->
-    <div class="card">
-      <div class="card-title">Resumen del diseño</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;" class="stat-grid">
-        <div class="stat-box"><div class="stat-val" id="sum-w">—</div><div class="stat-label">Ancho mm</div></div>
-        <div class="stat-box"><div class="stat-val" id="sum-h">—</div><div class="stat-label">Alto mm</div></div>
-        <div class="stat-box"><div class="stat-val" style="font-size:1.1rem;" id="sum-level">Medio</div><div class="stat-label">Grabado</div></div>
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-n" id="sum-w">—</div>
+        <div class="stat-u">ancho mm</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="sum-h">—</div>
+        <div class="stat-u">alto mm</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="sum-level" style="font-size:1.1rem;">Medio</div>
+        <div class="stat-u">grabado</div>
       </div>
     </div>
 
-    <!-- Exportar -->
-    <div class="card">
-      <div class="card-title">Exportar para LaserGRBL</div>
-      <div class="btn-row">
-        <button class="btn btn-export btn-export-corte" id="btn-dl-corte">⬇ CORTE<br><span style="font-size:0.7rem;font-weight:400;color:var(--muted);">silueta exterior</span></button>
-        <button class="btn btn-export btn-export-grabado" id="btn-dl-grabado">⬇ GRABADO<br><span style="font-size:0.7rem;font-weight:400;color:var(--muted);">textura interior</span></button>
+    <!-- EXPORT BUTTONS -->
+    <div>
+      <div class="section-label">Exportar para LaserGRBL</div>
+      <div class="export-grid">
+        <button class="export-btn export-btn-cut" id="btn-dl-corte">
+          <span class="export-icon">✂️</span>
+          <span class="export-name">CORTE</span>
+          <span class="export-desc">Silueta exterior<br>para cortar</span>
+        </button>
+        <button class="export-btn export-btn-eng" id="btn-dl-grabado">
+          <span class="export-icon">🔆</span>
+          <span class="export-name">GRABADO</span>
+          <span class="export-desc">Textura interior<br>para grabar</span>
+        </button>
       </div>
-      <button class="btn btn-ghost" id="btn-dl-preview" style="margin-top:10px;">⬇ Exportar preview PNG</button>
     </div>
 
-    <div class="card">
-      <button class="btn btn-primary" id="btn-nuevo">✦ Nuevo diseño</button>
+    <div class="divider"></div>
+
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <button class="btn btn-ghost" id="btn-dl-preview" style="font-size:0.85rem; padding:12px;">
+        ⬇ Exportar preview PNG
+      </button>
+      <button class="btn btn-ghost" id="btn-save-gallery" style="font-size:0.85rem; padding:12px; color:var(--blush);">
+        ✦ Guardar en galería
+      </button>
+      <button class="btn btn-cta" id="btn-nuevo" style="margin-top:4px;">
+        + Nuevo diseño
+      </button>
     </div>
 
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PANTALLA — GALERÍA
+══════════════════════════════════════ -->
+<div class="screen" id="screen-gallery">
+  <div class="topbar">
+    <div class="brand">TAC <span>✦</span> JOYAS</div>
+    <button class="btn btn-ghost" style="width:auto;padding:7px 14px;font-size:0.8rem;" onclick="goScreen('screen-foto')">+ Nuevo</button>
+  </div>
+
+  <div class="scroll-body" style="padding:0; gap:0; overflow-y:auto; flex:1;">
+    <div style="padding:24px 20px 16px;">
+      <div style="font-family:var(--font-serif);font-size:1.6rem;color:var(--text);margin-bottom:4px;">Mi colección</div>
+      <div style="font-size:0.82rem;color:var(--muted);">Tus diseños guardados</div>
+    </div>
+    <div class="gallery-grid" id="gallery-grid">
+      <!-- filled by JS -->
+    </div>
   </div>
 </div>
 
 <!-- Toast -->
-<div id="toast">Guardado</div>
+<div id="toast">Listo</div>
 
-<script type="module">
-// ═══════════════════════════════════════════════════════════
-//  STORAGE (IndexedDB simple)
-// ═══════════════════════════════════════════════════════════
-const DB_NAME = 'tac-joyas-db', STORE = 'blobs';
-let _db = null;
-async function getDB() {
-  if (_db) return _db;
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore(STORE);
-    req.onsuccess = e => { _db = e.target.result; res(_db); };
-    req.onerror = rej;
-  });
-}
-async function saveBlob(key, val) {
-  const db = await getDB();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).put(val, key);
-    tx.oncomplete = res; tx.onerror = rej;
-  });
-}
-async function loadBlob(key) {
-  const db = await getDB();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(STORE, 'readonly');
-    const req = tx.objectStore(STORE).get(key);
-    req.onsuccess = () => res(req.result);
-    req.onerror = rej;
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
+<script>
+// ═══════════════════════════════════════
 //  MATERIALES
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
 const MATERIALS = [
-  { name:'Cuero marrón',   type:'Natural',   color:'#8B4513' },
-  { name:'Cuero rojo',     type:'Natural',   color:'#8B1A1A' },
-  { name:'Cuero negro',    type:'Natural',   color:'#1a1a1a' },
-  { name:'Cuero camel',    type:'Natural',   color:'#C8824A' },
-  { name:'Cuero crema',    type:'Natural',   color:'#E8D5A3' },
-  { name:'Corcho natural', type:'Corcho',    color:'#C8A878' },
-  { name:'Corcho oscuro',  type:'Corcho',    color:'#8B6914' },
-  { name:'Madera clara',   type:'Madera',    color:'#DEB887' },
-  { name:'Madera oscura',  type:'Madera',    color:'#5C3317' },
-  { name:'Fieltro verde',  type:'Fieltro',   color:'#4A7C5C' },
+  { name:'Cuero marrón',   type:'Natural · tonos cálidos',  color:'#8B4513' },
+  { name:'Cuero rojo',     type:'Natural · vibrante',       color:'#8B1A1A' },
+  { name:'Cuero negro',    type:'Natural · clásico',        color:'#2a2a2a' },
+  { name:'Cuero camel',    type:'Natural · suave',          color:'#C8824A' },
+  { name:'Cuero crema',    type:'Natural · delicado',       color:'#E8D5A3' },
+  { name:'Corcho natural', type:'Corcho · ecológico',       color:'#C8A878' },
+  { name:'Corcho oscuro',  type:'Corcho · tostado',         color:'#8B6914' },
+  { name:'Madera clara',   type:'Madera · ligera',          color:'#DEB887' },
+  { name:'Madera oscura',  type:'Madera · nogal',           color:'#5C3317' },
+  { name:'Fieltro verde',  type:'Fieltro · menta',          color:'#4A7C5C' },
 ];
 
-// ═══════════════════════════════════════════════════════════
-//  LASER ENGINE (extracción silueta + grabado + corte)
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+const state = {
+  srcCanvas: null, srcImg: null,
+  silCanvas: null, cutCanvas: null, engCanvas: null,
+  drawCanvas: null,
+  material: MATERIALS[0],
+  widthMm: 40, heightMm: null, _ratio: null,
+  level: 'MEDIO',
+  drawMode: 'draw', brushSize: 8,
+  history: [], histIdx: -1,
+  previewMode: 'REALISTA',
+};
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════
+//  NAVEGACIÓN
+// ═══════════════════════════════════════
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════
+//  CANVAS ENGINE
+// ═══════════════════════════════════════
 function extractSilhouette(src, W, H) {
   const tmp = document.createElement('canvas');
   tmp.width = W; tmp.height = H;
@@ -373,547 +721,439 @@ function extractSilhouette(src, W, H) {
   tCtx.drawImage(src, 0, 0, W, H);
   const imgData = tCtx.getImageData(0, 0, W, H);
   const d = imgData.data;
-
-  // Color de fondo desde 4 esquinas
-  let bgR=0, bgG=0, bgB=0;
   const corners = [0, (W-1)*4, (H-1)*W*4, ((H-1)*W+W-1)*4];
-  corners.forEach(i => { bgR+=d[i]; bgG+=d[i+1]; bgB+=d[i+2]; });
-  bgR/=4; bgG/=4; bgB/=4;
-
+  let bgR=0,bgG=0,bgB=0;
+  corners.forEach(i=>{bgR+=d[i];bgG+=d[i+1];bgB+=d[i+2];});
+  bgR/=4;bgG/=4;bgB/=4;
   const out = document.createElement('canvas');
-  out.width=W; out.height=H;
-  const oCtx = out.getContext('2d');
-  const oData = oCtx.createImageData(W, H);
-  const o = oData.data;
-
-  for (let i=0; i<d.length; i+=4) {
-    const diff = Math.abs(d[i]-bgR)+Math.abs(d[i+1]-bgG)+Math.abs(d[i+2]-bgB);
-    const v = diff > 30 ? 0 : 255;
-    o[i]=o[i+1]=o[i+2]=v; o[i+3]=255;
+  out.width=W;out.height=H;
+  const oCtx=out.getContext('2d');
+  const oData=oCtx.createImageData(W,H);
+  const o=oData.data;
+  for(let i=0;i<d.length;i+=4){
+    const diff=Math.abs(d[i]-bgR)+Math.abs(d[i+1]-bgG)+Math.abs(d[i+2]-bgB);
+    const v=diff>30?0:255;
+    o[i]=o[i+1]=o[i+2]=v;o[i+3]=255;
   }
-
-  // Flood-fill desde esquinas → fondo exterior blanco
-  const visited = new Uint8Array(W*H);
-  const queue = [];
-  const push = (x,y) => {
-    if (x<0||x>=W||y<0||y>=H) return;
+  // flood fill
+  const visited=new Uint8Array(W*H);
+  const queue=[];
+  const push=(x,y)=>{
+    if(x<0||x>=W||y<0||y>=H)return;
     const i=y*W+x;
-    if (visited[i]) return;
-    if (o[i*4]<128) return;
-    visited[i]=1; o[i*4]=o[i*4+1]=o[i*4+2]=255;
-    queue.push(i);
+    if(visited[i])return;
+    if(o[i*4]<128)return;
+    visited[i]=1;o[i*4]=o[i*4+1]=o[i*4+2]=255;queue.push(i);
   };
-  for (let x=0;x<W;x++) { push(x,0); push(x,H-1); }
-  for (let y=0;y<H;y++) { push(0,y); push(W-1,y); }
+  for(let x=0;x<W;x++){push(x,0);push(x,H-1);}
+  for(let y=0;y<H;y++){push(0,y);push(W-1,y);}
   let qi=0;
-  while (qi<queue.length) {
-    const idx=queue[qi++]; const x=idx%W, y=(idx/W)|0;
-    push(x-1,y); push(x+1,y); push(x,y-1); push(x,y+1);
-  }
-
-  oCtx.putImageData(oData, 0, 0);
-  return out;
-}
-
-function buildOuterEdge(silCanvas, W, H) {
-  const ctx = silCanvas.getContext('2d');
-  const data = ctx.getImageData(0,0,W,H).data;
-  const out = document.createElement('canvas');
-  out.width=W; out.height=H;
-  const oCtx = out.getContext('2d');
-  const oData = oCtx.createImageData(W,H);
-  const o = oData.data;
-  for (let i=0;i<o.length;i+=4){o[i]=o[i+1]=o[i+2]=255;o[i+3]=255;}
-  for (let y=1;y<H-1;y++) {
-    for (let x=1;x<W-1;x++) {
-      const ci=(y*W+x)*4;
-      if (data[ci]>128) continue;
-      const n=[(y-1)*W+x,(y+1)*W+x,y*W+(x-1),y*W+(x+1)];
-      if (n.some(ni=>data[ni*4]>128)) { o[ci]=o[ci+1]=o[ci+2]=0; }
-    }
+  while(qi<queue.length){
+    const idx=queue[qi++];const x=idx%W,y=(idx/W)|0;
+    push(x-1,y);push(x+1,y);push(x,y-1);push(x,y+1);
   }
   oCtx.putImageData(oData,0,0);
   return out;
 }
 
-// Grabado con grises reales según nivel
-// SUAVE: solo bordes muy oscuros, poco contraste → grabado ligero
-// MEDIO: moderado
-// FUERTE: muchas zonas, negro intenso → grabado profundo
-function buildEngraving(src, W, H, level='MEDIO') {
-  const params = {
-    SUAVE:  { threshold: 160, minOutput: 200 },
-    MEDIO:  { threshold: 200, minOutput: 100 },
-    FUERTE: { threshold: 230, minOutput: 0   },
-  };
-  const { threshold, minOutput } = params[level] || params.MEDIO;
+function buildOuterEdge(sil,W,H){
+  const ctx=sil.getContext('2d');
+  const data=ctx.getImageData(0,0,W,H).data;
+  const out=document.createElement('canvas');
+  out.width=W;out.height=H;
+  const oCtx=out.getContext('2d');
+  const oData=oCtx.createImageData(W,H);
+  const o=oData.data;
+  for(let i=0;i<o.length;i+=4){o[i]=o[i+1]=o[i+2]=255;o[i+3]=255;}
+  for(let y=1;y<H-1;y++){for(let x=1;x<W-1;x++){
+    const ci=(y*W+x)*4;
+    if(data[ci]>128)continue;
+    const n=[(y-1)*W+x,(y+1)*W+x,y*W+(x-1),y*W+(x+1)];
+    if(n.some(ni=>data[ni*4]>128)){o[ci]=o[ci+1]=o[ci+2]=0;}
+  }}
+  oCtx.putImageData(oData,0,0);
+  return out;
+}
 
-  const c = document.createElement('canvas');
-  c.width=W; c.height=H;
+function buildEngraving(src,W,H,level){
+  const params={SUAVE:{threshold:160,minOutput:200},MEDIO:{threshold:200,minOutput:100},FUERTE:{threshold:230,minOutput:0}};
+  const{threshold,minOutput}=params[level]||params.MEDIO;
+  const c=document.createElement('canvas');
+  c.width=W;c.height=H;
   const ctx=c.getContext('2d');
   ctx.drawImage(src,0,0,W,H);
   const imgData=ctx.getImageData(0,0,W,H);
   const d=imgData.data;
-  for (let i=0;i<d.length;i+=4) {
+  for(let i=0;i<d.length;i+=4){
     const luma=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
     let v;
-    if (luma<threshold) {
-      v = minOutput + (255-minOutput)*(luma/threshold);
-      v = Math.round(v);
-    } else { v=255; }
-    d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
+    if(luma<threshold){v=Math.round(minOutput+(255-minOutput)*(luma/threshold));}
+    else{v=255;}
+    d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;
   }
   ctx.putImageData(imgData,0,0);
-
-  // Recortar a silueta
-  const sil = extractSilhouette(src,W,H);
-  const mask = bnToAlpha(sil,W,H);
+  const sil=extractSilhouette(src,W,H);
+  const mask=bnToAlpha(sil,W,H);
   ctx.globalCompositeOperation='destination-in';
   ctx.drawImage(mask,0,0);
   ctx.globalCompositeOperation='source-over';
   return c;
 }
 
-function bnToAlpha(bn, W, H) {
-  const tmp=document.createElement('canvas');
-  tmp.width=W;tmp.height=H;
-  const tCtx=tmp.getContext('2d');
-  tCtx.drawImage(bn,0,0,W,H);
-  const data=tCtx.getImageData(0,0,W,H);
-  const d=data.data;
-  for (let i=0;i<d.length;i+=4){
-    const luma=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-    d[i+3]=luma<128?255:0;
-    d[i]=d[i+1]=d[i+2]=0;
-  }
-  tCtx.putImageData(data,0,0);
-  return tmp;
+function bnToAlpha(bn,W,H){
+  const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;
+  const tCtx=tmp.getContext('2d');tCtx.drawImage(bn,0,0,W,H);
+  const data=tCtx.getImageData(0,0,W,H);const d=data.data;
+  for(let i=0;i<d.length;i+=4){d[i+3]=d[i]<128?255:0;d[i]=d[i+1]=d[i+2]=0;}
+  tCtx.putImageData(data,0,0);return tmp;
 }
 
-// ═══════════════════════════════════════════════════════════
-//  APP STATE
-// ═══════════════════════════════════════════════════════════
-const state = {
-  srcImg:       null,   // HTMLImageElement
-  srcCanvas:    null,   // canvas con imagen fuente
-  silCanvas:    null,   // silueta BN
-  engCanvas:    null,   // grabado en grises
-  cutCanvas:    null,   // borde exterior
-  drawCanvas:   null,   // trazos manuales
-  material:     MATERIALS[0],
-  widthMm:      40,
-  heightMm:     null,
-  level:        'MEDIO',
-  drawMode:     'draw',
-  brushSize:    8,
-  history:      [],
-  histIdx:      -1,
-  previewMode:  'REALISTA',
-};
-
-// ═══════════════════════════════════════════════════════════
-//  TOAST
-// ═══════════════════════════════════════════════════════════
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2000);
+function getFinalEng(){
+  const W=state.engCanvas.width,H=state.engCanvas.height;
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  ctx.drawImage(state.engCanvas,0,0);
+  if(state.drawCanvas)ctx.drawImage(state.drawCanvas,0,0);
+  return c;
 }
 
-// ═══════════════════════════════════════════════════════════
-//  PANTALLA 1 — FOTO + MATERIAL
-// ═══════════════════════════════════════════════════════════
-function initScreen1() {
-  // Color grid
-  const grid = document.getElementById('color-grid');
-  MATERIALS.forEach((m, i) => {
-    const sw = document.createElement('div');
-    sw.className = 'color-swatch' + (i===0?' selected':'');
-    sw.style.background = m.color;
-    sw.title = m.name;
-    sw.onclick = () => {
-      grid.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));
-      sw.classList.add('selected');
-      state.material = m;
-      document.getElementById('color-preview').style.background = m.color;
-      document.getElementById('color-name').textContent = m.name;
-      document.getElementById('color-type').textContent = m.type;
-    };
-    grid.appendChild(sw);
-  });
-  document.getElementById('color-preview').style.background = MATERIALS[0].color;
-
-  // Upload
-  const zone = document.getElementById('upload-zone');
-  const fileInput = document.getElementById('file-input');
-  zone.onclick = () => fileInput.click();
-  fileInput.onchange = e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    const reader = new FileReader();
-    reader.onload = ev => loadPhoto(ev.target.result);
-    reader.readAsDataURL(f);
-  };
-
-  // Medidas
-  const wInput = document.getElementById('input-width');
-  const hInput = document.getElementById('input-height');
-  wInput.oninput = () => {
-    state.widthMm = parseFloat(wInput.value) || 40;
-    if (state._ratio && wInput.value) {
-      const h = Math.round(state.widthMm * state._ratio * 10) / 10;
-      hInput.placeholder = h;
-      state.heightMm = h;
-    }
-  };
-  hInput.oninput = () => { state.heightMm = parseFloat(hInput.value) || null; };
-
-  // Next
-  document.getElementById('btn-step1-next').onclick = () => {
-    if (!state.srcImg) { toast('Sube una foto primero'); return; }
-    state.widthMm  = parseFloat(wInput.value)  || 40;
-    state.heightMm = parseFloat(hInput.value)  || (state._ratio ? Math.round(40*state._ratio*10)/10 : 40);
-    goToScreen('screen-design');
-    initScreen2();
-  };
-}
-
-function loadPhoto(dataUrl) {
-  const zone = document.getElementById('upload-zone');
-  const img = new Image();
-  img.onload = () => {
-    state.srcImg = img;
-    // Mostrar miniatura
-    zone.innerHTML = `<img src="${dataUrl}" alt="foto">`;
-
-    // Guardar canvas fuente
-    const sc = document.createElement('canvas');
-    sc.width = img.naturalWidth; sc.height = img.naturalHeight;
-    sc.getContext('2d').drawImage(img, 0, 0);
-    state.srcCanvas = sc;
-
-    // Calcular ratio y rellenar alto automático
-    const ratio = img.naturalHeight / img.naturalWidth;
-    state._ratio = ratio;
-    const wVal = parseFloat(document.getElementById('input-width').value) || 40;
-    const h = Math.round(wVal * ratio * 10) / 10;
-    document.getElementById('input-height').placeholder = h + ' (auto)';
-    document.getElementById('ratio-hint').textContent = `Ratio ${img.naturalWidth}×${img.naturalHeight}px → alto calculado automáticamente`;
-    state.heightMm = h;
-    toast('Foto cargada ✓');
-  };
-  img.src = dataUrl;
-}
-
-// ═══════════════════════════════════════════════════════════
-//  PANTALLA 2 — DISEÑAR
-// ═══════════════════════════════════════════════════════════
-function initScreen2() {
-  const src = state.srcCanvas;
-  if (!src) return;
-
-  const W = src.width, H = src.height;
-  const wrap = document.getElementById('canvas-wrap');
-  const cResult = document.getElementById('canvas-result');
-  const cDraw = document.getElementById('canvas-draw');
-
-  cResult.width = W; cResult.height = H;
-  cDraw.width = W; cDraw.height = H;
-  state.drawCanvas = cDraw;
-
-  // Extraer
-  buildAll(state.level);
-
-  // Tabs vista
-  document.querySelectorAll('#view-tabs .tab').forEach(tab => {
-    tab.onclick = () => {
-      document.querySelectorAll('#view-tabs .tab').forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-      drawResult(tab.dataset.view);
-    };
-  });
-
-  // Tabs intensidad
-  document.querySelectorAll('#intensity-tabs .tab').forEach(tab => {
-    tab.onclick = () => {
-      document.querySelectorAll('#intensity-tabs .tab').forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-      state.level = tab.dataset.level;
-      buildEngraving_state();
-      const activeView = document.querySelector('#view-tabs .tab.active')?.dataset.view || 'GRABADO';
-      drawResult(activeView);
-      toast('Intensidad: ' + tab.dataset.level);
-    };
-  });
-
-  // Herramientas
-  document.getElementById('tool-draw').onclick = () => {
-    state.drawMode = 'draw';
-    document.getElementById('tool-draw').className = 'btn btn-secondary';
-    document.getElementById('tool-erase').className = 'btn btn-ghost';
-  };
-  document.getElementById('tool-erase').onclick = () => {
-    state.drawMode = 'erase';
-    document.getElementById('tool-draw').className = 'btn btn-ghost';
-    document.getElementById('tool-erase').className = 'btn btn-secondary';
-  };
-  document.getElementById('tool-undo').onclick = () => undo();
-  document.getElementById('tool-reextract').onclick = () => {
-    buildAll(state.level);
-    toast('Re-extraído');
-  };
-
-  // Pincel
-  document.getElementById('slider-brush').oninput = e => {
-    state.brushSize = parseInt(e.target.value);
-    document.getElementById('lbl-brush').textContent = e.target.value;
-  };
-
-  // Dibujo táctil
-  cDraw.addEventListener('mousedown', e => startDraw(e));
-  cDraw.addEventListener('mousemove', e => moveDraw(e));
-  cDraw.addEventListener('mouseup', endDraw);
-  cDraw.addEventListener('mouseleave', endDraw);
-  cDraw.addEventListener('touchstart', e => startDraw(e), { passive: false });
-  cDraw.addEventListener('touchmove', e => moveDraw(e), { passive: false });
-  cDraw.addEventListener('touchend', endDraw);
-
-  // Next
-  document.getElementById('btn-design-next').onclick = () => {
-    goToScreen('screen-export');
-    initScreen3();
-  };
-
-  document.getElementById('btn-design-back').onclick = () => goToScreen('screen-foto');
-}
-
-function buildAll(level) {
-  const src = state.srcCanvas;
-  const W = src.width, H = src.height;
-  state.silCanvas = extractSilhouette(src, W, H);
-  state.cutCanvas = buildOuterEdge(state.silCanvas, W, H);
-  state.engCanvas = buildEngraving(src, W, H, level);
-  // Reset trazos
-  state.drawCanvas.getContext('2d').clearRect(0, 0, W, H);
-  state.history = [];
-  state.histIdx = -1;
-  pushHistory();
-  drawResult('GRABADO');
-  document.querySelectorAll('#view-tabs .tab').forEach(t=>t.classList.remove('active'));
-  document.querySelector('#view-tabs .tab[data-view="GRABADO"]').classList.add('active');
-}
-
-function buildEngraving_state() {
-  const src = state.srcCanvas;
-  const W = src.width, H = src.height;
-  state.engCanvas = buildEngraving(src, W, H, state.level);
-}
-
-function drawResult(view) {
-  const cRes = document.getElementById('canvas-result');
-  const ctx = cRes.getContext('2d');
-  const W = cRes.width, H = cRes.height;
+function drawResult(view){
+  const cRes=document.getElementById('canvas-result');
+  const ctx=cRes.getContext('2d');
+  const W=cRes.width,H=cRes.height;
   ctx.clearRect(0,0,W,H);
-
-  if (view === 'GRABADO') {
-    // Fondo negro + grabado blanco/gris recortado a silueta
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0,0,W,H);
-    if (state.engCanvas) ctx.drawImage(state.engCanvas, 0,0);
-    if (state.drawCanvas) ctx.drawImage(state.drawCanvas, 0,0);
-
-  } else if (view === 'CORTE') {
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0,0,W,H);
-    if (state.cutCanvas) ctx.drawImage(state.cutCanvas, 0,0);
-    // Agujero si hay
-    ctx.strokeStyle = '#000'; ctx.lineWidth=2;
-
-  } else if (view === 'PREVIEW') {
-    // Color real: material + grabado en multiply
-    ctx.fillStyle = '#f5f0ea';
-    ctx.fillRect(0,0,W,H);
-    if (state.engCanvas && state.silCanvas) {
-      const tmp = document.createElement('canvas');
-      tmp.width=W; tmp.height=H;
-      const tCtx = tmp.getContext('2d');
-      // Fondo de material
-      tCtx.fillStyle = state.material.color;
-      tCtx.fillRect(0,0,W,H);
-      // Grabado en multiply
-      tCtx.globalCompositeOperation = 'multiply';
-      tCtx.drawImage(state.engCanvas,0,0);
-      if (state.drawCanvas) { tCtx.drawImage(state.drawCanvas,0,0); }
-      tCtx.globalCompositeOperation = 'source-over';
-      // Clipear a silueta
-      const mask = bnToAlpha(state.silCanvas, W, H);
-      tCtx.globalCompositeOperation = 'destination-in';
-      tCtx.drawImage(mask,0,0);
+  if(view==='GRABADO'){
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    if(state.engCanvas)ctx.drawImage(state.engCanvas,0,0);
+    if(state.drawCanvas)ctx.drawImage(state.drawCanvas,0,0);
+  }else if(view==='CORTE'){
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    if(state.cutCanvas)ctx.drawImage(state.cutCanvas,0,0);
+  }else if(view==='PREVIEW'){
+    ctx.fillStyle='#f7f3ee';ctx.fillRect(0,0,W,H);
+    if(state.engCanvas&&state.silCanvas){
+      const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;
+      const tCtx=tmp.getContext('2d');
+      tCtx.fillStyle=state.material.color;tCtx.fillRect(0,0,W,H);
+      tCtx.globalCompositeOperation='multiply';tCtx.drawImage(state.engCanvas,0,0);
+      if(state.drawCanvas)tCtx.drawImage(state.drawCanvas,0,0);
+      tCtx.globalCompositeOperation='source-over';
+      const mask=bnToAlpha(state.silCanvas,W,H);
+      tCtx.globalCompositeOperation='destination-in';tCtx.drawImage(mask,0,0);
       ctx.drawImage(tmp,0,0);
     }
   }
 }
 
-// Historial
-function pushHistory() {
-  if (!state.drawCanvas) return;
-  const W=state.drawCanvas.width, H=state.drawCanvas.height;
+function buildAll(level){
+  const src=state.srcCanvas;const W=src.width,H=src.height;
+  state.silCanvas=extractSilhouette(src,W,H);
+  state.cutCanvas=buildOuterEdge(state.silCanvas,W,H);
+  state.engCanvas=buildEngraving(src,W,H,level);
+  state.drawCanvas.getContext('2d').clearRect(0,0,W,H);
+  state.history=[];state.histIdx=-1;pushHistory();
+  drawResult('GRABADO');
+}
+
+function pushHistory(){
+  if(!state.drawCanvas)return;
+  const W=state.drawCanvas.width,H=state.drawCanvas.height;
   const data=state.drawCanvas.getContext('2d').getImageData(0,0,W,H);
   state.history=state.history.slice(0,state.histIdx+1);
   state.history.push(data);
-  if (state.history.length>20) state.history.shift();
+  if(state.history.length>20)state.history.shift();
   state.histIdx=state.history.length-1;
 }
-function undo() {
-  if (state.histIdx<=0) return;
+function undo(){
+  if(state.histIdx<=0)return;
   state.histIdx--;
   state.drawCanvas.getContext('2d').putImageData(state.history[state.histIdx],0,0);
-  const v=document.querySelector('#view-tabs .tab.active')?.dataset.view||'GRABADO';
+  const v=document.querySelector('#view-tabs .vtab.active')?.dataset.view||'GRABADO';
   drawResult(v);
 }
 
-// Dibujo táctil
-let _drawing=false, _lastPt=null;
-function getCanvasPoint(e, canvas) {
+// Drawing
+let _drawing=false,_lastPt=null;
+function getCanvasPt(e,canvas){
   const rect=canvas.getBoundingClientRect();
   const touch=e.touches?.[0]??e;
-  return {
-    x:(touch.clientX-rect.left)*canvas.width/rect.width,
-    y:(touch.clientY-rect.top)*canvas.height/rect.height,
-  };
+  return{x:(touch.clientX-rect.left)*canvas.width/rect.width,y:(touch.clientY-rect.top)*canvas.height/rect.height};
 }
-function startDraw(e) {
-  e.preventDefault();
-  _drawing=true;
-  _lastPt=getCanvasPoint(e,state.drawCanvas);
-}
-function moveDraw(e) {
-  if (!_drawing) return;
-  e.preventDefault();
-  const pt=getCanvasPoint(e,state.drawCanvas);
+function startDraw(e){e.preventDefault();_drawing=true;_lastPt=getCanvasPt(e,state.drawCanvas);}
+function moveDraw(e){
+  if(!_drawing)return;e.preventDefault();
+  const pt=getCanvasPt(e,state.drawCanvas);
   const ctx=state.drawCanvas.getContext('2d');
   ctx.globalCompositeOperation=state.drawMode==='erase'?'destination-out':'source-over';
-  ctx.strokeStyle='#000'; ctx.lineWidth=state.brushSize;
-  ctx.lineCap='round'; ctx.lineJoin='round';
-  ctx.beginPath(); ctx.moveTo(_lastPt.x,_lastPt.y); ctx.lineTo(pt.x,pt.y); ctx.stroke();
+  ctx.strokeStyle='#000';ctx.lineWidth=state.brushSize;ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(_lastPt.x,_lastPt.y);ctx.lineTo(pt.x,pt.y);ctx.stroke();
   _lastPt=pt;
-  const v=document.querySelector('#view-tabs .tab.active')?.dataset.view||'GRABADO';
-  drawResult(v);
+  drawResult(document.querySelector('#view-tabs .vtab.active')?.dataset.view||'GRABADO');
 }
-function endDraw() {
-  if (!_drawing) return;
-  _drawing=false;
-  pushHistory();
+function endDraw(){if(!_drawing)return;_drawing=false;pushHistory();}
+
+// ═══════════════════════════════════════
+//  GALERÍA (localStorage)
+// ═══════════════════════════════════════
+function saveToGallery(name, dataUrl) {
+  try {
+    const gallery = JSON.parse(localStorage.getItem('tac-gallery')||'[]');
+    gallery.unshift({ name, url: dataUrl, date: new Date().toISOString() });
+    if(gallery.length > 50) gallery.pop();
+    localStorage.setItem('tac-gallery', JSON.stringify(gallery));
+    return true;
+  } catch(e) { return false; }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  PANTALLA 3 — EXPORTAR
-// ═══════════════════════════════════════════════════════════
-function initScreen3() {
-  // Resumen
-  document.getElementById('sum-w').textContent = state.widthMm || '—';
-  document.getElementById('sum-h').textContent = state.heightMm || '—';
-  document.getElementById('sum-level').textContent = state.level;
+function renderGallery() {
+  const grid = document.getElementById('gallery-grid');
+  try {
+    const gallery = JSON.parse(localStorage.getItem('tac-gallery')||'[]');
+    if(gallery.length === 0){
+      grid.innerHTML = `<div class="gallery-empty">
+        <div class="gallery-empty-icon">✦</div>
+        <div class="gallery-empty-text">Aún no tienes diseños guardados.<br>Crea uno y pulsa "Guardar en galería".</div>
+      </div>`;
+      return;
+    }
+    grid.innerHTML = gallery.map((item,i) => `
+      <div class="gallery-item" onclick="openGalleryItem(${i})">
+        <img src="${item.url}" alt="${item.name}" loading="lazy">
+        <div class="g-overlay"><span class="g-name">${item.name}</span></div>
+      </div>
+    `).join('');
+  } catch(e) {
+    grid.innerHTML = '<div class="gallery-empty"><div class="gallery-empty-text">Error al cargar la galería</div></div>';
+  }
+}
 
-  // Preview
-  renderPreview('REALISTA');
+function openGalleryItem(i){
+  const gallery = JSON.parse(localStorage.getItem('tac-gallery')||'[]');
+  if(!gallery[i])return;
+  const a=document.createElement('a');
+  a.href=gallery[i].url;a.download=gallery[i].name+'.png';a.click();
+}
 
-  // Export
-  document.getElementById('btn-dl-corte').onclick = () => exportCanvas(state.cutCanvas, 'CORTE');
-  document.getElementById('btn-dl-grabado').onclick = () => exportCanvas(getFinalEngCanvas(), 'GRABADO');
-  document.getElementById('btn-dl-preview').onclick = () => exportCanvas(document.getElementById('canvas-preview'), 'PREVIEW');
-  document.getElementById('btn-nuevo').onclick = () => {
-    location.reload();
-  };
-  document.getElementById('btn-export-back').onclick = () => goToScreen('screen-design');
+// ═══════════════════════════════════════
+//  EXPORT
+// ═══════════════════════════════════════
+function renderPreview(mode){
+  const c=document.getElementById('canvas-preview');
+  if(!state.silCanvas)return;
+  const W=state.silCanvas.width,H=state.silCanvas.height;
+  c.width=W;c.height=H;
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  if(mode==='REALISTA'){
+    ctx.fillStyle='#f7f3ee';ctx.fillRect(0,0,W,H);
+    const tmp=document.createElement('canvas');tmp.width=W;tmp.height=H;
+    const tCtx=tmp.getContext('2d');
+    tCtx.fillStyle=state.material.color;tCtx.fillRect(0,0,W,H);
+    const eng=getFinalEng();
+    tCtx.globalCompositeOperation='multiply';tCtx.drawImage(eng,0,0);
+    tCtx.globalCompositeOperation='source-over';
+    const mask=bnToAlpha(state.silCanvas,W,H);
+    tCtx.globalCompositeOperation='destination-in';tCtx.drawImage(mask,0,0);
+    ctx.save();ctx.shadowColor='rgba(44,36,32,0.25)';ctx.shadowBlur=20;ctx.shadowOffsetY=5;
+    ctx.drawImage(tmp,0,0);ctx.restore();
+  }else if(mode==='CORTE'){
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    if(state.cutCanvas)ctx.drawImage(state.cutCanvas,0,0);
+  }else if(mode==='GRABADO'){
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+    ctx.drawImage(getFinalEng(),0,0);
+  }
+  state.previewMode=mode;
+}
+
+function exportCanvas(canvas,name){
+  if(!canvas){toast('No hay datos');return;}
+  const a=document.createElement('a');
+  a.href=canvas.toDataURL('image/png');a.download=`tac-joyas_${name}.png`;a.click();
+  toast('Descargando '+name+'…');
 }
 
 window.app = {
-  setPreviewMode(mode) {
-    ['real','corte','grab'].forEach(k => {
-      document.getElementById('prev-tab-'+k)?.classList.remove('active');
+  setPreviewMode(mode){
+    ['real','cut','eng'].forEach(k=>{
+      document.getElementById('pvt-'+k)?.classList.remove('active');
     });
-    const map = { REALISTA:'real', CORTE:'corte', GRABADO:'grab' };
-    document.getElementById('prev-tab-'+map[mode])?.classList.add('active');
+    const map={REALISTA:'real',CORTE:'cut',GRABADO:'eng'};
+    document.getElementById('pvt-'+map[mode])?.classList.add('active');
     renderPreview(mode);
   }
 };
 
-function getFinalEngCanvas() {
-  // Combina engCanvas + trazos manuales
-  const W=state.engCanvas.width, H=state.engCanvas.height;
-  const c=document.createElement('canvas');
-  c.width=W;c.height=H;
-  const ctx=c.getContext('2d');
-  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
-  ctx.drawImage(state.engCanvas,0,0);
-  if (state.drawCanvas) ctx.drawImage(state.drawCanvas,0,0);
-  return c;
+// ═══════════════════════════════════════
+//  INIT PANTALLA 1
+// ═══════════════════════════════════════
+(function initS1(){
+  // Materiales
+  const scroll = document.getElementById('material-scroll');
+  MATERIALS.forEach((m,i)=>{
+    const chip=document.createElement('div');
+    chip.className='mat-chip'+(i===0?' selected':'');
+    chip.innerHTML=`<div class="mat-dot" style="background:${m.color}"></div><div class="mat-name">${m.name}</div>`;
+    chip.onclick=()=>{
+      scroll.querySelectorAll('.mat-chip').forEach(c=>c.classList.remove('selected'));
+      chip.classList.add('selected');
+      state.material=m;
+      document.getElementById('mat-dot-preview').style.background=m.color;
+      document.getElementById('mat-name-lbl').textContent=m.name;
+      document.getElementById('mat-type-lbl').textContent=m.type;
+    };
+    scroll.appendChild(chip);
+  });
+  document.getElementById('mat-dot-preview').style.background=MATERIALS[0].color;
+
+  // Upload
+  const zone=document.getElementById('upload-zone');
+  const fi=document.getElementById('file-input');
+  zone.onclick=()=>fi.click();
+  fi.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        state.srcImg=img;
+        const sc=document.createElement('canvas');
+        sc.width=img.naturalWidth;sc.height=img.naturalHeight;
+        sc.getContext('2d').drawImage(img,0,0);
+        state.srcCanvas=sc;
+        const ratio=img.naturalHeight/img.naturalWidth;
+        state._ratio=ratio;
+        const w=parseFloat(document.getElementById('input-width').value)||40;
+        const h=Math.round(w*ratio*10)/10;
+        document.getElementById('input-height').placeholder=h+' (auto)';
+        document.getElementById('ratio-hint').textContent=`${img.naturalWidth}×${img.naturalHeight}px · ratio calculado automáticamente`;
+        state.heightMm=h;
+        // Mostrar miniatura
+        zone.innerHTML=`<img src="${ev.target.result}" alt="foto">`;
+        toast('Foto añadida ✓');
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(f);
+  };
+
+  document.getElementById('input-width').oninput=e=>{
+    state.widthMm=parseFloat(e.target.value)||40;
+    if(state._ratio){
+      const h=Math.round(state.widthMm*state._ratio*10)/10;
+      document.getElementById('input-height').placeholder=h+' (auto)';
+      state.heightMm=h;
+    }
+  };
+  document.getElementById('input-height').oninput=e=>{state.heightMm=parseFloat(e.target.value)||null;};
+
+  document.getElementById('btn-step1-next').onclick=()=>{
+    if(!state.srcImg){toast('Añade una foto primero');return;}
+    state.widthMm=parseFloat(document.getElementById('input-width').value)||40;
+    state.heightMm=parseFloat(document.getElementById('input-height').value)||(state._ratio?Math.round(40*state._ratio*10)/10:40);
+    goScreen('screen-design');
+    initS2();
+  };
+})();
+
+// ═══════════════════════════════════════
+//  INIT PANTALLA 2
+// ═══════════════════════════════════════
+let s2init=false;
+function initS2(){
+  if(s2init)return;s2init=true;
+  const src=state.srcCanvas;
+  const W=src.width,H=src.height;
+  const cRes=document.getElementById('canvas-result');
+  const cDraw=document.getElementById('canvas-draw');
+  cRes.width=W;cRes.height=H;
+  cDraw.width=W;cDraw.height=H;
+  state.drawCanvas=cDraw;
+  buildAll(state.level);
+
+  // View tabs
+  document.querySelectorAll('#view-tabs .vtab').forEach(tab=>{
+    tab.onclick=()=>{
+      document.querySelectorAll('#view-tabs .vtab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');drawResult(tab.dataset.view);
+    };
+  });
+
+  // Intensity
+  document.querySelectorAll('#intensity-tabs .itab').forEach(tab=>{
+    tab.onclick=()=>{
+      document.querySelectorAll('#intensity-tabs .itab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      state.level=tab.dataset.level;
+      state.engCanvas=buildEngraving(state.srcCanvas,state.srcCanvas.width,state.srcCanvas.height,state.level);
+      drawResult(document.querySelector('#view-tabs .vtab.active')?.dataset.view||'GRABADO');
+      toast('Intensidad: '+tab.dataset.level);
+    };
+  });
+
+  // Tools
+  document.getElementById('tool-draw').onclick=()=>{
+    state.drawMode='draw';
+    document.getElementById('tool-draw').classList.add('active');
+    document.getElementById('tool-erase').classList.remove('active');
+  };
+  document.getElementById('tool-erase').onclick=()=>{
+    state.drawMode='erase';
+    document.getElementById('tool-erase').classList.add('active');
+    document.getElementById('tool-draw').classList.remove('active');
+  };
+  document.getElementById('tool-undo').onclick=undo;
+  document.getElementById('tool-reextract').onclick=()=>{s2init=false;buildAll(state.level);s2init=true;toast('Re-extraído');};
+
+  // Brush
+  document.getElementById('slider-brush').oninput=e=>{
+    state.brushSize=parseInt(e.target.value);
+    document.getElementById('lbl-brush').textContent=e.target.value;
+  };
+
+  // Draw events
+  cDraw.addEventListener('mousedown',startDraw);
+  cDraw.addEventListener('mousemove',moveDraw);
+  cDraw.addEventListener('mouseup',endDraw);
+  cDraw.addEventListener('mouseleave',endDraw);
+  cDraw.addEventListener('touchstart',startDraw,{passive:false});
+  cDraw.addEventListener('touchmove',moveDraw,{passive:false});
+  cDraw.addEventListener('touchend',endDraw);
+
+  document.getElementById('btn-design-next').onclick=()=>{goScreen('screen-export');initS3();};
+  document.getElementById('btn-design-back').onclick=()=>goScreen('screen-foto');
 }
 
-function renderPreview(mode) {
-  const wrap = document.getElementById('preview-canvas-wrap');
-  const c = document.getElementById('canvas-preview');
-  if (!state.silCanvas) return;
-
-  const W = state.silCanvas.width, H = state.silCanvas.height;
-  c.width=W; c.height=H;
-  const ctx=c.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-
-  if (mode==='REALISTA') {
-    // Fondo claro + material + grabado
-    ctx.fillStyle = '#faf8f5';
-    ctx.fillRect(0,0,W,H);
-    const tmp=document.createElement('canvas');
-    tmp.width=W;tmp.height=H;
-    const tCtx=tmp.getContext('2d');
-    tCtx.fillStyle=state.material.color;
-    tCtx.fillRect(0,0,W,H);
-    const eng=getFinalEngCanvas();
-    tCtx.globalCompositeOperation='multiply';
-    tCtx.drawImage(eng,0,0);
-    tCtx.globalCompositeOperation='source-over';
-    const mask=bnToAlpha(state.silCanvas,W,H);
-    tCtx.globalCompositeOperation='destination-in';
-    tCtx.drawImage(mask,0,0);
-    // Sombra
-    ctx.save();
-    ctx.shadowColor='rgba(0,0,0,0.3)';ctx.shadowBlur=16;ctx.shadowOffsetY=4;
-    ctx.drawImage(tmp,0,0);
-    ctx.restore();
-  } else if (mode==='CORTE') {
-    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
-    if (state.cutCanvas) ctx.drawImage(state.cutCanvas,0,0);
-  } else if (mode==='GRABADO') {
-    ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
-    ctx.drawImage(getFinalEngCanvas(),0,0);
-  }
-
-  state.previewMode = mode;
+// ═══════════════════════════════════════
+//  INIT PANTALLA 3
+// ═══════════════════════════════════════
+function initS3(){
+  document.getElementById('sum-w').textContent=state.widthMm||'—';
+  document.getElementById('sum-h').textContent=state.heightMm||'—';
+  document.getElementById('sum-level').textContent=state.level;
+  renderPreview('REALISTA');
+  document.getElementById('btn-dl-corte').onclick=()=>exportCanvas(state.cutCanvas,'CORTE');
+  document.getElementById('btn-dl-grabado').onclick=()=>exportCanvas(getFinalEng(),'GRABADO');
+  document.getElementById('btn-dl-preview').onclick=()=>exportCanvas(document.getElementById('canvas-preview'),'PREVIEW');
+  document.getElementById('btn-save-gallery').onclick=()=>{
+    const name='Diseño '+new Date().toLocaleDateString('es-ES');
+    const cv=document.getElementById('canvas-preview');
+    if(saveToGallery(name,cv.toDataURL('image/jpeg',0.9))){toast('Guardado en galería ✦');}
+    else{toast('No se pudo guardar');}
+  };
+  document.getElementById('btn-nuevo').onclick=()=>location.reload();
+  document.getElementById('btn-export-back').onclick=()=>goScreen('screen-design');
 }
 
-function exportCanvas(canvas, name) {
-  if (!canvas) { toast('No hay datos para exportar'); return; }
-  const a=document.createElement('a');
-  a.href=canvas.toDataURL('image/png');
-  a.download=`tac-joyas_${name}.png`;
-  a.click();
-  toast(`Descargando ${name}...`);
-}
-
-// ═══════════════════════════════════════════════════════════
-//  NAVEGACIÓN
-// ═══════════════════════════════════════════════════════════
-function goToScreen(id) {
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
-}
-
-// ── INIT ──
-initScreen1();
+// Galería nav
+document.getElementById('screen-gallery').querySelector('.topbar button').addEventListener('click',()=>goScreen('screen-foto'));
+// Render galería al entrar
+const origGo=goScreen;
+window.goScreen=function(id){
+  origGo(id);
+  if(id==='screen-gallery')renderGallery();
+};
 </script>
 </body>
 </html>
