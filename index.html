@@ -4,105 +4,125 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#0d0d1a">
-<title>TAC JOYAS</title>
+<title>✦ TAC JOYAS</title>
 <link rel="manifest" href="manifest.json">
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+
   :root {
-    --bg: #0d0d1a;
-    --surface: #161628;
-    --surface2: #1e1e35;
-    --gold: #c8a035;
-    --gold2: #e8c060;
-    --text: #f0f0f8;
-    --muted: #8888aa;
-    --border: rgba(200,160,53,0.2);
-    --radius: 12px;
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --surface2: #f5f0ea;
+    --rose: #d4869a;
+    --rose2: #e8a8b8;
+    --rose-light: #fce8ed;
+    --sage: #8aaa8e;
+    --sage-light: #e8f0e9;
+    --gold: #c8956a;
+    --gold-light: #faf0e6;
+    --text: #3d3530;
+    --text2: #6b5a52;
+    --muted: #a89890;
+    --border: #e8ddd6;
+    --border2: #d4c8be;
+    --radius: 14px;
+    --shadow: 0 2px 12px rgba(61,53,48,0.08);
+    --shadow-hover: 0 4px 20px rgba(61,53,48,0.14);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; min-height: 100dvh; overflow-x: hidden; }
+  body { background: var(--bg); color: var(--text); font-family: 'Nunito', system-ui, sans-serif; min-height: 100dvh; overflow-x: hidden; }
 
   /* ── HEADER ── */
-  .header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .header h1 { font-size: 1rem; font-weight: 800; letter-spacing: 2px; color: var(--gold); }
-  .header .step-info { font-size: 0.75rem; color: var(--muted); }
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: var(--shadow); }
+  .header h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.4rem; font-weight: 700; letter-spacing: 3px; color: var(--rose); background: linear-gradient(135deg, var(--rose) 0%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .header .step-info { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.5px; background: var(--surface2); padding: 4px 10px; border-radius: 20px; }
 
   /* ── STEPS BAR ── */
-  .steps { display: flex; gap: 6px; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .step { flex: 1; height: 4px; border-radius: 2px; background: var(--surface2); transition: background .3s; }
-  .step.done { background: var(--gold); }
-  .step.active { background: var(--gold2); }
+  .steps { display: flex; gap: 6px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .step { flex: 1; height: 5px; border-radius: 3px; background: var(--border); transition: background .4s ease; }
+  .step.done { background: linear-gradient(90deg, var(--rose), var(--gold)); }
+  .step.active { background: var(--rose2); }
 
   /* ── BODY ── */
-  .body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
 
   /* ── CARDS ── */
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-  .card-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+  .card-title { font-size: 0.68rem; font-weight: 800; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 14px; }
 
   /* ── BUTTONS ── */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 16px; border-radius: 8px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all .15s; width: 100%; }
-  .btn-primary { background: var(--gold); color: #000; }
-  .btn-primary:active { background: var(--gold2); }
-  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-  .btn-secondary:active { border-color: var(--gold); }
-  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 13px 18px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all .2s ease; width: 100%; font-family: inherit; }
+  .btn-primary { background: linear-gradient(135deg, var(--rose) 0%, var(--gold) 100%); color: #fff; box-shadow: 0 4px 14px rgba(212,134,154,0.4); }
+  .btn-primary:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(212,134,154,0.3); }
+  .btn-secondary { background: var(--surface2); color: var(--text2); border: 1.5px solid var(--border2); }
+  .btn-secondary:active { background: var(--rose-light); border-color: var(--rose2); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+  .btn-ghost:active { background: var(--surface2); }
   .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .btn-export { padding: 18px; font-size: 1rem; border-radius: 10px; }
+  .btn-export { padding: 20px 14px; font-size: 0.95rem; border-radius: 12px; line-height: 1.4; }
+  .btn-export-corte { background: linear-gradient(135deg, #e8c5cf, #d4a0ae); color: #3d3530; box-shadow: 0 4px 14px rgba(212,160,174,0.35); border: none; }
+  .btn-export-grabado { background: linear-gradient(135deg, #c8d8b8, #a8c098); color: #3d3530; box-shadow: 0 4px 14px rgba(138,170,142,0.35); border: none; }
+  .btn-export-corte:active, .btn-export-grabado:active { transform: scale(0.97); }
 
   /* ── TABS ── */
-  .tabs { display: flex; gap: 4px; }
-  .tab { flex: 1; padding: 10px 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 0.8rem; font-weight: 600; cursor: pointer; text-align: center; transition: all .15s; }
-  .tab.active { background: var(--gold); color: #000; border-color: var(--gold); }
+  .tabs { display: flex; gap: 5px; }
+  .tab { flex: 1; padding: 10px 4px; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; color: var(--muted); font-size: 0.78rem; font-weight: 700; cursor: pointer; text-align: center; transition: all .2s; font-family: inherit; }
+  .tab.active { background: linear-gradient(135deg, var(--rose-light), var(--gold-light)); color: var(--text); border-color: var(--rose2); }
 
   /* ── UPLOAD ZONE ── */
-  .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 32px 16px; text-align: center; cursor: pointer; transition: border-color .2s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-  .upload-zone:active, .upload-zone.drag { border-color: var(--gold); }
-  .upload-zone .icon { font-size: 2.5rem; }
-  .upload-zone .label { color: var(--muted); font-size: 0.85rem; }
-  .upload-zone img { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; }
+  .upload-zone { border: 2px dashed var(--border2); border-radius: var(--radius); padding: 36px 16px; text-align: center; cursor: pointer; transition: all .25s; display: flex; flex-direction: column; align-items: center; gap: 10px; background: linear-gradient(135deg, #fdfcfb, var(--rose-light)); }
+  .upload-zone:active, .upload-zone.drag { border-color: var(--rose); background: var(--rose-light); }
+  .upload-zone .icon { font-size: 2.8rem; }
+  .upload-zone .label { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+  .upload-zone img { max-width: 100%; max-height: 200px; border-radius: 10px; object-fit: contain; box-shadow: var(--shadow); }
   #file-input { display: none; }
 
   /* ── CANVAS ── */
-  #canvas-wrap { position: relative; background: #111; border-radius: var(--radius); overflow: hidden; touch-action: none; }
+  #canvas-wrap { position: relative; background: var(--surface2); border-radius: var(--radius); overflow: hidden; touch-action: none; border: 1px solid var(--border); }
   #canvas-result { display: block; width: 100%; height: auto; }
   #canvas-draw { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
 
   /* ── SLIDER ── */
   .slider-row { display: flex; align-items: center; gap: 10px; }
-  .slider-row label { font-size: 0.75rem; color: var(--muted); white-space: nowrap; min-width: 70px; }
-  .slider-row input[type=range] { flex: 1; accent-color: var(--gold); }
-  .slider-row .val { font-size: 0.75rem; color: var(--gold); min-width: 28px; text-align: right; }
+  .slider-row label { font-size: 0.75rem; color: var(--muted); white-space: nowrap; min-width: 70px; font-weight: 700; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--rose); }
+  .slider-row .val { font-size: 0.75rem; color: var(--rose); min-width: 28px; text-align: right; font-weight: 700; }
 
   /* ── MATERIAL COLOR GRID ── */
   .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-  .color-swatch { width: 100%; aspect-ratio: 1; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all .15s; }
-  .color-swatch.selected { border-color: var(--gold2); transform: scale(1.1); }
+  .color-swatch { width: 100%; aspect-ratio: 1; border-radius: 10px; cursor: pointer; border: 2.5px solid transparent; transition: all .2s; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .color-swatch.selected { border-color: var(--rose); transform: scale(1.12); box-shadow: 0 3px 10px rgba(212,134,154,0.4); }
 
   /* ── DRAW TOOLBAR ── */
   .draw-tools { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
   .draw-tools .btn { min-width: 72px; width: auto; padding: 8px 12px; font-size: 0.8rem; }
 
   /* ── TOAST ── */
-  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--gold); color: #000; padding: 10px 20px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; transition: transform .3s; z-index: 999; pointer-events: none; }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: linear-gradient(135deg, var(--rose), var(--gold)); color: #fff; padding: 11px 22px; border-radius: 24px; font-weight: 700; font-size: 0.85rem; transition: transform .3s cubic-bezier(.34,1.56,.64,1); z-index: 999; pointer-events: none; box-shadow: 0 4px 16px rgba(212,134,154,0.4); }
   #toast.show { transform: translateX(-50%) translateY(0); }
 
   /* ── FOOTER NAV ── */
-  .footer { padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border); }
+  .footer { padding: 14px 18px; background: var(--surface); border-top: 1px solid var(--border); }
 
   /* ── SCREENS ── */
   .screen { display: none; flex-direction: column; min-height: 100dvh; }
   .screen.active { display: flex; }
 
   /* ── EXPORT PREVIEW ── */
-  #preview-canvas-wrap { background: #fff; border-radius: var(--radius); overflow: hidden; }
+  #preview-canvas-wrap { background: var(--surface2); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
   #preview-canvas-wrap canvas { display: block; width: 100%; height: auto; }
 
   /* ── MEDIDAS ── */
   .dim-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .dim-field { display: flex; flex-direction: column; gap: 4px; }
-  .dim-field label { font-size: 0.75rem; color: var(--muted); }
-  .dim-field input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 1rem; width: 100%; }
-  .dim-field input:focus { outline: none; border-color: var(--gold); }
+  .dim-field { display: flex; flex-direction: column; gap: 5px; }
+  .dim-field label { font-size: 0.75rem; color: var(--muted); font-weight: 700; letter-spacing: 0.5px; }
+  .dim-field input { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); padding: 11px 13px; font-size: 1rem; width: 100%; font-family: inherit; }
+  .dim-field input:focus { outline: none; border-color: var(--rose2); background: var(--rose-light); }
+
+  /* ── STAT BOXES ── */
+  .stat-box { background: var(--surface2); border-radius: 12px; padding: 14px 10px; border: 1px solid var(--border); }
+  .stat-val { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-weight: 700; color: var(--rose); line-height: 1; }
+  .stat-label { font-size: 0.65rem; color: var(--muted); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
 </style>
 </head>
 <body>
@@ -267,10 +287,10 @@
     <!-- Medidas finales -->
     <div class="card">
       <div class="card-title">Resumen del diseño</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
-        <div><div style="font-size:1.3rem;font-weight:800;color:var(--gold);" id="sum-w">—</div><div style="font-size:0.7rem;color:var(--muted);">Ancho mm</div></div>
-        <div><div style="font-size:1.3rem;font-weight:800;color:var(--gold);" id="sum-h">—</div><div style="font-size:0.7rem;color:var(--muted);">Alto mm</div></div>
-        <div><div style="font-size:1.1rem;font-weight:800;color:var(--gold);text-transform:uppercase;" id="sum-level">Medio</div><div style="font-size:0.7rem;color:var(--muted);">Grabado</div></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;" class="stat-grid">
+        <div class="stat-box"><div class="stat-val" id="sum-w">—</div><div class="stat-label">Ancho mm</div></div>
+        <div class="stat-box"><div class="stat-val" id="sum-h">—</div><div class="stat-label">Alto mm</div></div>
+        <div class="stat-box"><div class="stat-val" style="font-size:1.1rem;" id="sum-level">Medio</div><div class="stat-label">Grabado</div></div>
       </div>
     </div>
 
@@ -278,8 +298,8 @@
     <div class="card">
       <div class="card-title">Exportar para LaserGRBL</div>
       <div class="btn-row">
-        <button class="btn btn-secondary btn-export" id="btn-dl-corte">⬇ CORTE<br><span style="font-size:0.7rem;font-weight:400;color:var(--muted);">silueta exterior</span></button>
-        <button class="btn btn-secondary btn-export" id="btn-dl-grabado">⬇ GRABADO<br><span style="font-size:0.7rem;font-weight:400;color:var(--muted);">textura interior</span></button>
+        <button class="btn btn-export btn-export-corte" id="btn-dl-corte">⬇ CORTE<br><span style="font-size:0.7rem;font-weight:400;color:var(--muted);">silueta exterior</span></button>
+        <button class="btn btn-export btn-export-grabado" id="btn-dl-grabado">⬇ GRABADO<br><span style="font-size:0.7rem;font-weight:400;color:var(--muted);">textura interior</span></button>
       </div>
       <button class="btn btn-ghost" id="btn-dl-preview" style="margin-top:10px;">⬇ Exportar preview PNG</button>
     </div>
@@ -712,7 +732,7 @@ function drawResult(view) {
 
   } else if (view === 'PREVIEW') {
     // Color real: material + grabado en multiply
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = '#f5f0ea';
     ctx.fillRect(0,0,W,H);
     if (state.engCanvas && state.silCanvas) {
       const tmp = document.createElement('canvas');
@@ -844,7 +864,7 @@ function renderPreview(mode) {
 
   if (mode==='REALISTA') {
     // Fondo claro + material + grabado
-    ctx.fillStyle = '#f0f0f0';
+    ctx.fillStyle = '#faf8f5';
     ctx.fillRect(0,0,W,H);
     const tmp=document.createElement('canvas');
     tmp.width=W;tmp.height=H;
