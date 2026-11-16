@@ -1,4 +1,4 @@
-const CACHE = 'tac-joyas-v12';
+const CACHE = 'tac-joyas-v13';
 const ASSETS = [
   './',
   './index.html',
